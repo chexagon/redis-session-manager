@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.crimsonhexagon</groupId>
-	<artifactId>tomcat-redis-session-manager</artifactId>
+	<artifactId>redis-session-manager</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<description>A tomcat8 session manager providing session replication via persistence to redis</description>
 	<url>https://github.com/chexagon/redis-session-manager</url>
