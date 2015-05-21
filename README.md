@@ -22,3 +22,9 @@ TODO
 * Full Redisson client configuration
 * Elasticache integration: use the Elasticache API to get redis cluster info given an Elasticache cluster name
 * Documentation
+
+Usage
+-----
+* Run a redis server locally on port 6379.
+* Add `<Manager className="com.crimsonhexagon.rsm.RedisSessionManager" />` to tomcat's context.xml
+* Copy `redis-session-manager-with-dependencies-VERSION.jar` to tomcat/lib

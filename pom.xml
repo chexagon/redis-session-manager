@@ -78,7 +78,7 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
-							<finalName>redis-session-manager-with-dependencies</finalName>
+							<finalName>redis-session-manager-with-dependencies-${project.version}</finalName>
 						</configuration>
 					</execution>
 				</executions>
