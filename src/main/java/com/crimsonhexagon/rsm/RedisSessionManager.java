@@ -18,6 +18,7 @@ package com.crimsonhexagon.rsm;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -49,10 +50,13 @@ public class RedisSessionManager extends ManagerBase {
 	 */
 	public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
 	
+	public static final String DEFAULT_ENDPOINT = "localhost:6379";
+	
 	private RedisSessionClient client;
 	private String clientClassName = DEFAULT_CLIENT_CLASSNAME;
 	private String sessionKeyPrefix = DEFAULT_SESSION_KEY_PREFIX;
 	private String ignorePattern = DEFAULT_IGNORE_PATTERN;
+	private String endpoint = DEFAULT_ENDPOINT;
 	private boolean saveOnChange;
 	private boolean forceSaveAfterRequest;
 	
@@ -121,6 +125,7 @@ public class RedisSessionManager extends ManagerBase {
 	 * @throws IllegalAccessException
 	 */
 	protected void initializeClient() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+		log.info("Using client class: " + clientClassName);
 		Class<?> clientClass = Class.forName(clientClassName);
 		if (!RedisSessionClient.class.isAssignableFrom(clientClass)) {
 		    throw new IllegalArgumentException("Class " + clientClassName +" is not a RedisSessionClient");
@@ -298,23 +303,68 @@ public class RedisSessionManager extends ManagerBase {
 		// Redis will handle expiration
 	}
 
+    /**
+     * Define the fully qualified class name of the {@link RedisSessionClient} to use.
+     * Defaults to {@value #DEFAULT_CLIENT_CLASSNAME}
+     * @param clientClassName 
+     */
     public void setClientClassName(String clientClassName) {
         this.clientClassName = clientClassName;
     }
 
-    public void setSessionKeyPrefix(String sessionKeyPrefix) {
+	/**
+	 * Define the prefix for all redis keys.<br>
+	 * Defaults to {@value #DEFAULT_SESSION_KEY_PREFIX}
+	 * @param sessionKeyPrefix
+	 */
+	public void setSessionKeyPrefix(String sessionKeyPrefix) {
         this.sessionKeyPrefix = sessionKeyPrefix;
     }
 
+    /**
+     * If <code>true</code> the session will be persisted to redis immediately when any attribute is modified.<br>
+     * Default is <code>false</code> which persists a modified session when the request is complete.
+     * @param saveOnChange
+     */
     public void setSaveOnChange(boolean saveOnChange) {
         this.saveOnChange = saveOnChange;
     }
 
-    public void setForceSaveAfterRequest(boolean saveAfterRequest) {
-        this.forceSaveAfterRequest = saveAfterRequest;
+    /**
+     * If <code>true</code> the session will always be persisted to redis after a request completes regardless of {@link RedisSession#isDirty()}.<br>
+     * Default is <code>false</code> which persists a session after a request only if {@link RedisSession#isDirty()} is <code>true</code>
+     * @param forceSaveAfterRequest
+     */
+    public void setForceSaveAfterRequest(boolean forceSaveAfterRequest) {
+        this.forceSaveAfterRequest = forceSaveAfterRequest;
     }
     
-    class RedisSessionState {
+    /**
+     * Set a pattern (must adhere to {@link Pattern} specs) for requests to ignore.<br>
+     * Defaults to {@value #DEFAULT_IGNORE_PATTERN}
+     * @param ignorePattern
+     */
+    public void setIgnorePattern(String ignorePattern) {
+		this.ignorePattern = ignorePattern;
+	}
+
+	/**
+	 * Set the redis endpoint (hostname:port)<br>
+	 * Defaults to {@value #DEFAULT_ENDPOINT}
+	 * @param endpoint
+	 */
+	public void setEndpoint(String endpoint) {
+		this.endpoint = endpoint;
+	}
+
+	public String getEndpoint() {
+		return endpoint;
+	}
+
+	/**
+	 * Encapsulates metadata about a {@link RedisSession}
+	 */
+	class RedisSessionState {
     	final String sessionId;
     	final RedisSession session;
     	boolean persisted;
@@ -339,6 +389,4 @@ public class RedisSessionManager extends ManagerBase {
 			this.persisted = true;
     	}
     }
-
-    
 }
