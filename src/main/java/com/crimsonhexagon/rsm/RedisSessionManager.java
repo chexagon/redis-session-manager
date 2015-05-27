@@ -279,9 +279,9 @@ public class RedisSessionManager extends ManagerBase {
 	 * 
 	 */
 	public void afterRequest() {
-		RedisSession session = currentSessionState.get().session;
-		if (session != null) {
-			try {
+		try {
+			RedisSession session = currentSessionState.get().session;
+			if (session != null) {
 				if (session.isValid()) {
 					log.trace("Request with session completed, saving session " + session.getId());
 					save(session, isForceSaveAfterRequest());
@@ -289,12 +289,11 @@ public class RedisSessionManager extends ManagerBase {
 					log.debug("HTTP Session has been invalidated, removing :" + session.getId());
 					remove(session);
 				}
-			} catch (Exception e) {
-				log.error("Error storing/removing session", e);
-			} finally {
-				currentSessionState.remove();
-				log.trace("Session removed from ThreadLocal :" + session.getIdInternal());
 			}
+		} catch (Exception e) {
+			log.error("Error storing/removing session", e);
+		} finally {
+			currentSessionState.remove();
 		}
 	}
 
@@ -388,5 +387,10 @@ public class RedisSessionManager extends ManagerBase {
     		}
 			this.persisted = true;
     	}
+
+		@Override
+		public String toString() {
+			return "sessionId: [" + sessionId + "]; persisted = [" + persisted +"]";
+		}
     }
 }
