@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.util.CustomObjectInputStream;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
 import org.redisson.Config;
 import org.redisson.Redisson;
 import org.redisson.codec.SerializationCodec;
@@ -35,7 +37,7 @@ import com.crimsonhexagon.rsm.RedisSessionManager;
  * @author Steve Ungerer
  */
 public class RedissonSessionClient implements RedisSessionClient {
-
+	private static final Log log = LogFactory.getLog(RedissonSessionClient.class);
 	private Redisson redisson;
 	private RedisSessionManager manager;
 	
@@ -56,7 +58,15 @@ public class RedissonSessionClient implements RedisSessionClient {
 
 	@Override
 	public RedisSession load(String key) {
-		return RedisSession.class.cast(redisson.getBucket(key).get());
+		Object obj = redisson.getBucket(key).get();
+		if (obj != null) {
+			if (RedisSession.class.isAssignableFrom(obj.getClass())) {
+				return RedisSession.class.cast(obj);
+			} else {
+				log.warn("Incompatible session class found in redis for session [" + key + "]: " + obj.getClass());
+			}
+		}
+		return null;
 	}
 
 	@Override
