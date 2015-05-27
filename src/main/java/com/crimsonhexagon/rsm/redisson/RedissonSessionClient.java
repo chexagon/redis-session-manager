@@ -64,6 +64,7 @@ public class RedissonSessionClient implements RedisSessionClient {
 				return RedisSession.class.cast(obj);
 			} else {
 				log.warn("Incompatible session class found in redis for session [" + key + "]: " + obj.getClass());
+				delete(key);
 			}
 		}
 		return null;
