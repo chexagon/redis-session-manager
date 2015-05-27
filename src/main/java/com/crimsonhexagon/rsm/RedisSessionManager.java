@@ -224,7 +224,11 @@ public class RedisSessionManager extends ManagerBase {
 			session = currentSessionState.get().session;
 		} else {
 			log.debug("Loading from redis");
-			session = client.load(generateRedisSessionKey(id));
+			try {
+				session = client.load(generateRedisSessionKey(id));
+			} catch (Throwable t) {
+				log.error("Failed to load session [" + id + "] from redis", t);
+			}
 			if (session != null) {
 				log.debug("Found session " + id + " in redis");
 				session.postDeserialization(this);
@@ -257,7 +261,11 @@ public class RedisSessionManager extends ManagerBase {
 			|| !currentSessionPersisted
 		) {
 			log.debug("Saving " + redisSession.getId() + " to redis");
-			client.save(sessionKey, redisSession);
+			try {
+				client.save(sessionKey, redisSession);
+			} catch (Throwable t) {
+				log.error("Failed to save session [" + redisSession.getId() + "]", t);
+			}
 			redisSession.clearDirty();
 			currentSessionState.get().markPersisted();
 		} else {
@@ -271,12 +279,16 @@ public class RedisSessionManager extends ManagerBase {
 	@Override
 	public void remove(Session session, boolean update) {
 		log.debug("Removing session ID : " + session.getId());
-		client.delete(generateRedisSessionKey(session.getId()));
+		try {
+			client.delete(generateRedisSessionKey(session.getId()));
+		} catch (Throwable t) {
+			log.error("Failed to remove session [" + session.getId() + "]", t);
+		}
 		currentSessionState.remove();
 	}
 
 	/**
-	 * 
+	 * Handle post-request actions. Invoked from {@link RedisSessionRequestValve}
 	 */
 	public void afterRequest() {
 		try {
