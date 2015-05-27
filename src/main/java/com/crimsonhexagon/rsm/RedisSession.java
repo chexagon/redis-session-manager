@@ -26,18 +26,26 @@ import org.apache.juli.logging.LogFactory;
 /**
  * Extension of {@link StandardSession} to
  * <ol>
- * <li>
+ * <li>track state changes to the session to determine if redis persistence is necessary</li>
  * <li>allow redis persistence immediately when an attribute changes if the {@link RedisSessionManager} is so configured</li>
+ * </ol>
+ * If application logic modifies an existing session attribute, e.g., <code>Foo.class.cast(session.getAttribute("Foo")).setBar("Bar");</code> the session
+ * <em>will not</em> be marked dirty. Setting {@link RedisSessionManager#setForceSaveAfterRequest(boolean)} to <code>true</code> will alleviate this but can
+ * cause unnecessary persists. {@link #DIRTY_ATTRIBUTE} is provided as a magic attribute to mark the session as dirty. Alternatively one could use
+ * <code>session.removeAttribute(null);</code> if it is desirable to not include {@link RedisSession} on the application's classpath.
  *
  * @author Steve Ungerer
  */
 public class RedisSession extends StandardSession {
 	private static final Log log = LogFactory.getLog(RedisSession.class);
 	private static final long serialVersionUID = 1L;
+
+	public static final String DIRTY_ATTRIBUTE = "__rsm_dirty__";
+
 	private transient boolean dirty;
 
 	/**
-	 * Constructs a new {@link RedisSession} with no manager. Intended for deserialization usage. 
+	 * Constructs a new {@link RedisSession} with no manager. Intended for deserialization usage.
 	 */
 	protected RedisSession() {
 		super(null);
@@ -50,6 +58,7 @@ public class RedisSession extends StandardSession {
 
 	/**
 	 * Has the state of this session been modified from its persistent state
+	 * 
 	 * @return
 	 */
 	public boolean isDirty() {
@@ -70,34 +79,46 @@ public class RedisSession extends StandardSession {
 	}
 
 	/**
-	 * Marks the session as dirty if an attribute changes and saves the session if so configured.
-	 * {@inheritDoc}
+	 * Marks the session as dirty if an attribute changes and saves the session if so configured. {@inheritDoc}
 	 */
 	@Override
 	public void setAttribute(String key, Object value) {
+		if (DIRTY_ATTRIBUTE.equals(key)) {
+			log.debug("Marking session as dirty due to dirty attribute '" + DIRTY_ATTRIBUTE +"'");
+			this.dirty = true;
+			return;
+		}
 		Object oldValue = getAttribute(key);
 		super.setAttribute(key, value);
 		if ((value != null && (oldValue == null || !value.equals(oldValue)))
-			|| (oldValue != null && (value == null || !oldValue.equals(value)))) {
+			|| (oldValue != null && (value == null || !oldValue.equals(value)))
+		) {
 			if (!saveOnChange()) {
 				this.dirty = true;
+				if (log.isTraceEnabled()) {
+					log.trace("Marking session as dirty. Attr [" + key + "] changed from [" + oldValue +"] to [" + value + "]");
+				}
 			} else {
-				log.debug("Saved on change; attr [" + key + "] changed");
+				if (log.isTraceEnabled()) {
+					log.trace("Saved session onchange. Attr [" + key + "] changed from [" + oldValue +"] to [" + value + "]");
+				}
 			}
 		}
 	}
 
 	/**
-	 * Marks the session as dirty when an attribute is removed and saves the session if so configured.
-	 * {@inheritDoc}
+	 * Marks the session as dirty when an attribute is removed and saves the session if so configured. {@inheritDoc}
 	 */
 	@Override
 	public void removeAttribute(String name) {
 		super.removeAttribute(name);
 		if (!saveOnChange()) {
 			this.dirty = true;
+			if (log.isTraceEnabled()) {
+				log.trace("Marking session as dirty. Attr [" + name + "] was removed");
+			}
 		} else {
-			log.debug("Saved on change; attr [" + name + "] removed");
+			log.debug("Saved session onchange; Attr [" + name + "] was removed");
 		}
 	}
 
@@ -122,6 +143,7 @@ public class RedisSession extends StandardSession {
 
 	/**
 	 * Performs post-deserialization logic.
+	 * 
 	 * @param manager
 	 */
 	public void postDeserialization(RedisSessionManager manager) {
