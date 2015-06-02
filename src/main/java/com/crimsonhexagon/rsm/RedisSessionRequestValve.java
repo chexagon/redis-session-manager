@@ -19,7 +19,9 @@ import java.io.IOException;
 import java.util.regex.Pattern;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletResponse;
 
+import org.apache.catalina.Context;
 import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
@@ -55,6 +57,13 @@ public class RedisSessionRequestValve extends ValveBase {
 
 	@Override
 	public void invoke(Request request, Response response) throws IOException, ServletException {
+        Context context = request.getContext();
+        if (context == null) {
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, sm.getString("standardHost.noContext"));
+            return;
+        }
+        Thread.currentThread().setContextClassLoader(context.getLoader().getClassLoader());
+	    
 		try {
 			final String query = getQueryString(request);
 			if (ignorePattern == null || !ignorePattern.matcher(query).matches()) {
