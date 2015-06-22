@@ -40,16 +40,22 @@ public class RedisSessionRequestValve extends ValveBase {
 	private final RedisSessionManager manager;
 	private final Pattern ignorePattern;
 
+	/**
+	 * Default pattern for request URIs to ignore:
+	 * Ignore ico|png|gif|jpg|jpeg|swf|css|js that appear in the requestURI (query strings not presented for matching)
+	 */
+	public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
+	
 	private static final String POST_METHOD = "post";
 	// note key to indicate we're going to process this request after completion
-	private static final String REQUEST_PROCESSED = "com.crimsonhexagon.rsm.PROCESSED";
+	protected static final String REQUEST_PROCESSED = "com.crimsonhexagon.rsm.PROCESSED";
 	// note key to store the query string
-	private static final String REQUEST_QUERY = "com.crimsonhexagon.rsm.QUERY_STRING";
+	protected static final String REQUEST_QUERY = "com.crimsonhexagon.rsm.QUERY_STRING";
 
 	public RedisSessionRequestValve(RedisSessionManager manager, String ignorePattern) {
 		this.manager = manager;
 		if (ignorePattern != null && ignorePattern.trim().length() > 0) {
-			this.ignorePattern = Pattern.compile(ignorePattern);
+			this.ignorePattern = Pattern.compile(ignorePattern, Pattern.CASE_INSENSITIVE);
 		} else {
 			this.ignorePattern = null;
 		}
@@ -65,12 +71,16 @@ public class RedisSessionRequestValve extends ValveBase {
         Thread.currentThread().setContextClassLoader(context.getLoader().getClassLoader());
 	    
 		try {
-			final String query = getQueryString(request);
-			if (ignorePattern == null || !ignorePattern.matcher(query).matches()) {
+			if (ignorePattern == null || !ignorePattern.matcher(request.getRequestURI()).matches()) {
 				request.setNote(REQUEST_PROCESSED, Boolean.TRUE);
-				log.trace("Will save to redis after request for [" + query + "]");
+				if (log.isTraceEnabled()) {
+					log.trace("Will save to redis after request for [" + getQueryString(request) + "]");
+				}
 			} else {
-				log.trace("Ignoring [" + query + "]");
+				request.removeNote(REQUEST_PROCESSED);
+				if (log.isTraceEnabled()) {
+					log.trace("Ignoring [" + getQueryString(request) + "]");
+				}
 			}
 			getNext().invoke(request, response);
 		} finally {
@@ -85,11 +95,12 @@ public class RedisSessionRequestValve extends ValveBase {
 		return true;
 	}
 
-	protected String getQueryString(final Request request) {
-		final Object q = request.getNote(REQUEST_QUERY);
-		if (q != null) {
-			return q.toString();
-		}
+	/**
+	 * Get the full query string of the request; used only for logging
+	 * @param request
+	 * @return
+	 */
+	private String getQueryString(final Request request) {
 		final StringBuilder sb = new StringBuilder();
 		sb.append(request.getMethod()).append(' ').append(request.getRequestURI());
 		if (!isPostMethod(request) && request.getQueryString() != null) {

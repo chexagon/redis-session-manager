@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
+import org.apache.catalina.connector.Request;
 import org.apache.catalina.session.ManagerBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -45,17 +46,13 @@ public class RedisSessionManager extends ManagerBase {
 	 * Default client to use for redis communication
 	 */
 	public static final String DEFAULT_CLIENT_CLASSNAME = RedissonSessionClient.class.getName(); 
-	/**
-	 * Default pattern for requests to ignore
-	 */
-	public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
 	
 	public static final String DEFAULT_ENDPOINT = "localhost:6379";
 	
 	private RedisSessionClient client;
 	private String clientClassName = DEFAULT_CLIENT_CLASSNAME;
 	private String sessionKeyPrefix = DEFAULT_SESSION_KEY_PREFIX;
-	private String ignorePattern = DEFAULT_IGNORE_PATTERN;
+	private String ignorePattern = RedisSessionRequestValve.DEFAULT_IGNORE_PATTERN;
 	private String endpoint = DEFAULT_ENDPOINT;
 	private boolean saveOnChange;
 	private boolean forceSaveAfterRequest;
@@ -351,7 +348,8 @@ public class RedisSessionManager extends ManagerBase {
     }
     
     /**
-     * Set a pattern (must adhere to {@link Pattern} specs) for requests to ignore.<br>
+     * Set a pattern (must adhere to {@link Pattern} specs) for requests to ignore. 
+     * This pattern is matched <em>case-insensitive</em> against {@link Request#getRequestURI()}.<br>
      * Defaults to {@value #DEFAULT_IGNORE_PATTERN}
      * @param ignorePattern
      */
