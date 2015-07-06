@@ -171,7 +171,7 @@ public class RedisSessionManager extends ManagerBase {
 	}
 
 	/**
-	 * Adds the jvmRoute to the given sessionId
+	 * Generate the storage key for the given sessionId
 	 * @param sessionId
 	 * @return
 	 */
@@ -186,6 +186,11 @@ public class RedisSessionManager extends ManagerBase {
 		return sessionKey;
 	}
 
+	/**
+	 * Prefix the given sessionId with the JVM Route
+	 * @param sessionId
+	 * @return
+	 */
 	private String prefixJvmRoute(String sessionId) {
 		String jvmRoute = getJvmRoute();
 		if (jvmRoute != null) {
@@ -370,6 +375,22 @@ public class RedisSessionManager extends ManagerBase {
 		return endpoint;
 	}
 
+	/**
+	 * Get the current {@link RedisSessionState}
+	 * @return
+	 */
+	RedisSessionState getCurrentState() {
+		return currentSessionState.get();
+	}
+	
+	/**
+	 * Set the current {@link RedisSessionState}; intended for testing
+	 * @param state
+	 */
+	void setCurrentState(RedisSessionState state) {
+		currentSessionState.set(state);
+	}
+	
 	/**
 	 * Encapsulates metadata about a {@link RedisSession}
 	 */
