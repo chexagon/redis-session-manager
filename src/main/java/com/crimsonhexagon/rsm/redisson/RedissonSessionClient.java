@@ -15,9 +15,8 @@
  */
 package com.crimsonhexagon.rsm.redisson;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.util.CustomObjectInputStream;
@@ -25,11 +24,16 @@ import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Config;
 import org.redisson.Redisson;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.codec.SerializationCodec;
 
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
 import com.crimsonhexagon.rsm.RedisSessionManager;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
 
 /**
  * Redisson-backed {@link RedisSessionClient}
@@ -91,29 +95,26 @@ public class RedissonSessionClient implements RedisSessionClient {
 	 */
 	public class ContextClassloaderSerializationCodec extends SerializationCodec {
 	    @Override
-	    public Object decodeKey(ByteBuffer bytes) {
-	        return this.decode(bytes);
-	    }
-
-	    @Override
-	    public Object decodeValue(ByteBuffer bytes) {
-	        return this.decode(bytes);
-	    }
-
-	    private Object decode(ByteBuffer bytes) {
-	        try {
-	            ByteArrayInputStream in = new ByteArrayInputStream(bytes.array(), bytes.arrayOffset() + bytes.position(), bytes.limit());
-	            final ObjectInputStream ois;
-	            if (manager != null && manager.getContainerClassLoader() != null) {
-	            	ois = new CustomObjectInputStream(in, manager.getContainerClassLoader());
-	            } else {
-	            	ois = new ObjectInputStream(in);
+	    public Decoder<Object> getValueDecoder() {
+	        return new Decoder<Object>() {
+	            @Override
+	            public Object decode(ByteBuf buf, State state) throws IOException {
+	    	        try {
+	    	            ByteBufInputStream in = new ByteBufInputStream(buf);
+	    	            final ObjectInputStream ois;
+	    	            if (manager != null && manager.getContainerClassLoader() != null) {
+	    	            	ois = new CustomObjectInputStream(in, manager.getContainerClassLoader());
+	    	            } else {
+	    	            	ois = new ObjectInputStream(in);
+	    	            }
+	    	            return ois.readObject();
+	    	        } catch (IOException io) {
+	    	        	throw io;
+	    	        } catch (Exception e) {
+	    	            throw new IOException(e);
+	    	        }
 	            }
-	            return ois.readObject();
-	        } catch (Exception e) {
-	            throw new IllegalStateException(e);
-	        }
+	        };
 	    }
 	}
-	
 }
