@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.crimsonhexagon</groupId>
 	<artifactId>redis-session-manager</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<description>A tomcat8 session manager providing session replication via persistence to redis</description>
 	<url>https://github.com/chexagon/redis-session-manager</url>
 	<licenses>
@@ -34,8 +34,8 @@
 		<dependency>
 			<groupId>org.redisson</groupId>
 			<artifactId>redisson</artifactId>
-			<version>2.0.0</version>
-			<!-- TODO: provided scope -->
+			<version>2.1.1</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.mockito</groupId>
