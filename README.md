@@ -12,8 +12,7 @@ Goals
 
 Usage
 -----
-* Copy `redis-session-manager-VERSION.jar` to tomcat/lib
-* Copy `redisson-X.Y.Z.jar` to tomcat/lib
+* Copy `redis-session-manager-with-dependencies-VERSION.jar` to tomcat/lib
 * Default configuration: (communicates with redis on localhost:6379)
 
 	<Manager className="com.crimsonhexagon.rsm.RedisSessionManager" />
