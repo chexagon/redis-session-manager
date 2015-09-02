@@ -56,6 +56,7 @@ public class RedisSessionManager extends ManagerBase {
 	private String endpoint = DEFAULT_ENDPOINT;
 	private boolean saveOnChange;
 	private boolean forceSaveAfterRequest;
+	private boolean dirtyOnMutation;
 	
 	private ThreadLocal<RedisSessionState> currentSessionState = ThreadLocal.withInitial(RedisSessionState::new);
 	
@@ -75,6 +76,14 @@ public class RedisSessionManager extends ManagerBase {
 	 */
 	public boolean isForceSaveAfterRequest() {
 		return forceSaveAfterRequest;
+	}
+	
+	/**
+	 * Should any attribute mutation result in marking the session as dirty
+	 * @return
+	 */
+	public boolean isDirtyOnMutation() {
+		return dirtyOnMutation;
 	}
 
 	/**
@@ -350,6 +359,27 @@ public class RedisSessionManager extends ManagerBase {
      */
     public void setForceSaveAfterRequest(boolean forceSaveAfterRequest) {
         this.forceSaveAfterRequest = forceSaveAfterRequest;
+    }
+    
+    /**
+     * If <code>true</true> the session will be marked as dirty on any mutation. When <code>false</code> the attribute is 
+     * checked for equality against the old value and the session is marked as dirty only if they differ.<br>
+     * When <code>false</code> the following code would <em>not</em> mark the session as dirty:
+     * <br>
+     * <pre>
+     *  List<String> stringList = (List<String>)session.getAttribute("myList");
+     *  stringList.add("another value");
+     *  session.setAttribute("myList", stringList);
+     * </pre>
+     * <br>
+     * Because the list is mutated, the 'old' value is identical to the 'new' value when equality is checked. It is a better
+     * design to ensure session objects are immutable, but setting <code>dirtyOnMutation</code> to <code>true</code> will
+     * workaround this with minimal overhead.
+     * 
+     * @param dirtyOnMutation
+     */
+    public void setDirtyOnMutation(boolean dirtyOnMutation) {
+    	this.dirtyOnMutation = dirtyOnMutation;
     }
     
     /**

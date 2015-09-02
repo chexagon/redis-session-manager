@@ -31,16 +31,15 @@ import org.apache.juli.logging.LogFactory;
  * </ol>
  * If application logic modifies an existing session attribute, e.g., <code>Foo.class.cast(session.getAttribute("Foo")).setBar("Bar");</code> the session
  * <em>will not</em> be marked dirty. Setting {@link RedisSessionManager#setForceSaveAfterRequest(boolean)} to <code>true</code> will alleviate this but can
- * cause unnecessary persists. {@link #DIRTY_ATTRIBUTE} is provided as a magic attribute to mark the session as dirty. Alternatively one could use
- * <code>session.removeAttribute(null);</code> if it is desirable to not include {@link RedisSession} on the application's classpath.
+ * cause unnecessary persists. The preferred workaround for this (other than preventing mutation of session attributes) is to enable
+ * {@link RedisSessionManager#isDirtyOnMutation()} and invoke <code>setAttribute()</code> with the existing key and new value. Alternatively 
+ * one could use <code>session.removeAttribute(null);</code> but this is a bit of a hack.
  *
  * @author Steve Ungerer
  */
 public class RedisSession extends StandardSession {
 	private static final Log log = LogFactory.getLog(RedisSession.class);
 	private static final long serialVersionUID = 1L;
-
-	public static final String DIRTY_ATTRIBUTE = "__rsm_dirty__";
 
 	private transient boolean dirty;
 
@@ -83,14 +82,10 @@ public class RedisSession extends StandardSession {
 	 */
 	@Override
 	public void setAttribute(String key, Object value) {
-		if (DIRTY_ATTRIBUTE.equals(key)) {
-			log.debug("Marking session as dirty due to dirty attribute '" + DIRTY_ATTRIBUTE +"'");
-			this.dirty = true;
-			return;
-		}
-		Object oldValue = getAttribute(key);
+		Object oldValue = getAttribute(key); // must be retrieved before invoking super()
 		super.setAttribute(key, value);
-		if ((value != null && (oldValue == null || !value.equals(oldValue)))
+		if (RedisSessionManager.class.cast(manager).isDirtyOnMutation() 
+			|| (value != null && (oldValue == null || !value.equals(oldValue)))
 			|| (oldValue != null && (value == null || !oldValue.equals(value)))
 		) {
 			if (!saveOnChange()) {
