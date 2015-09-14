@@ -30,30 +30,24 @@ import org.redisson.codec.SerializationCodec;
 
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
-import com.crimsonhexagon.rsm.RedisSessionManager;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 
 /**
- * Redisson-backed {@link RedisSessionClient}
+ * Redisson-backed {@link RedisSessionClient} for a single server configuration
  *
  * @author Steve Ungerer
  */
 public class RedissonSessionClient implements RedisSessionClient {
-	private static final Log log = LogFactory.getLog(RedissonSessionClient.class);
-	private Redisson redisson;
-	private RedisSessionManager manager;
+	protected final Log log = LogFactory.getLog(getClass());
 	
-	@Override
-	public void initialize(RedisSessionManager manager) {
-        this.manager = manager;
-		Config config = new Config();
-		config.useSingleServer().setAddress(manager.getEndpoint());
-		config.setCodec(new ContextClassloaderSerializationCodec());
-	    this.redisson = Redisson.create(config);
-    }
+	private final Redisson redisson;
 	
+	public RedissonSessionClient(Config config, ClassLoader containerClassLoader) {
+		config.setCodec(new ContextClassloaderSerializationCodec(containerClassLoader));
+		this.redisson = Redisson.create(config);
+	}
 	
 	@Override
 	public void save(String key, RedisSession session) {
@@ -90,10 +84,15 @@ public class RedissonSessionClient implements RedisSessionClient {
 	}
 
 	/**
-	 * Extension of {@link SerializationCodec} to use tomcat's {@link CustomObjectInputStream} with the {@link ClassLoader}
-	 * provided by the {@link RedisSessionManager}
+	 * Extension of {@link SerializationCodec} to use tomcat's {@link CustomObjectInputStream} with the {@link ClassLoader} provided 
 	 */
-	public class ContextClassloaderSerializationCodec extends SerializationCodec {
+	public static class ContextClassloaderSerializationCodec extends SerializationCodec {
+		private final ClassLoader containerClassLoader;
+		
+		public ContextClassloaderSerializationCodec(ClassLoader containerClassLoader) {
+			this.containerClassLoader = containerClassLoader;
+		}
+		
 	    @Override
 	    public Decoder<Object> getValueDecoder() {
 	        return new Decoder<Object>() {
@@ -102,8 +101,8 @@ public class RedissonSessionClient implements RedisSessionClient {
 	    	        try {
 	    	            ByteBufInputStream in = new ByteBufInputStream(buf);
 	    	            final ObjectInputStream ois;
-	    	            if (manager != null && manager.getContainerClassLoader() != null) {
-	    	            	ois = new CustomObjectInputStream(in, manager.getContainerClassLoader());
+	    	            if (containerClassLoader != null) {
+	    	            	ois = new CustomObjectInputStream(in, containerClassLoader);
 	    	            } else {
 	    	            	ois = new ObjectInputStream(in);
 	    	            }
@@ -116,5 +115,10 @@ public class RedissonSessionClient implements RedisSessionClient {
 	            }
 	        };
 	    }
+	}
+
+	@Override
+	public void shutdown() {
+		redisson.shutdown();
 	}
 }

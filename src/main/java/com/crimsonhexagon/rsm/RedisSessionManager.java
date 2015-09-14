@@ -28,32 +28,22 @@ import org.apache.catalina.session.ManagerBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
-import com.crimsonhexagon.rsm.redisson.RedissonSessionClient;
-
 /**
  * Manages {@link RedisSession}s
  * 
  * @author Steve Ungerer
  */
-public class RedisSessionManager extends ManagerBase {
-	private static final Log log = LogFactory.getLog(RedisSessionManager.class);
+public abstract class RedisSessionManager extends ManagerBase {
+	protected final Log log = LogFactory.getLog(this.getClass());
 
 	/**
 	 * Default value to prefix redis keys with.
 	 */
 	public static final String DEFAULT_SESSION_KEY_PREFIX="_rsm_";
-	/**
-	 * Default client to use for redis communication
-	 */
-	public static final String DEFAULT_CLIENT_CLASSNAME = RedissonSessionClient.class.getName(); 
-	
-	public static final String DEFAULT_ENDPOINT = "localhost:6379";
 	
 	private RedisSessionClient client;
-	private String clientClassName = DEFAULT_CLIENT_CLASSNAME;
 	private String sessionKeyPrefix = DEFAULT_SESSION_KEY_PREFIX;
 	private String ignorePattern = RedisSessionRequestValve.DEFAULT_IGNORE_PATTERN;
-	private String endpoint = DEFAULT_ENDPOINT;
 	private boolean saveOnChange;
 	private boolean forceSaveAfterRequest;
 	private boolean dirtyOnMutation;
@@ -62,6 +52,15 @@ public class RedisSessionManager extends ManagerBase {
 	
 	private RedisSessionRequestValve requestValve;
 
+	/**
+	 * Construct the {@link RedisSessionClient}
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 */
+	protected abstract RedisSessionClient buildClient() throws ClassNotFoundException, InstantiationException, IllegalAccessException;
+	
 	/**
 	 * Should the {@link RedisSession} be saved immediately when an attribute changes
 	 * @return
@@ -109,7 +108,7 @@ public class RedisSessionManager extends ManagerBase {
 		super.startInternal();
 
 		try {
-			initializeClient();
+			this.client = buildClient();
 		} catch (Throwable t) {
 			log.fatal("Unable to load serializer", t);
 			throw new LifecycleException(t);
@@ -124,21 +123,7 @@ public class RedisSessionManager extends ManagerBase {
 		setState(LifecycleState.STARTING);
 	}
 	
-	/**
-	 * Initialize the {@link RedisSessionClient}
-	 * @throws ClassNotFoundException
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 */
-	protected void initializeClient() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-		log.info("Using client class: " + clientClassName);
-		Class<?> clientClass = Class.forName(clientClassName);
-		if (!RedisSessionClient.class.isAssignableFrom(clientClass)) {
-		    throw new IllegalArgumentException("Class " + clientClassName +" is not a RedisSessionClient");
-		}
-		this.client = RedisSessionClient.class.cast(clientClass.newInstance());
-		this.client.initialize(this);
-	}
+
 
 
 	@Override
@@ -147,6 +132,7 @@ public class RedisSessionManager extends ManagerBase {
 		log.info("Stopping");
 		getContext().getParent().getPipeline().removeValve(requestValve);
 		getContext().getPipeline().removeValve(requestValve);
+		client.shutdown();
 		super.stopInternal();
 	}
 
@@ -325,15 +311,6 @@ public class RedisSessionManager extends ManagerBase {
 		// Redis will handle expiration
 	}
 
-    /**
-     * Define the fully qualified class name of the {@link RedisSessionClient} to use.
-     * Defaults to {@value #DEFAULT_CLIENT_CLASSNAME}
-     * @param clientClassName 
-     */
-    public void setClientClassName(String clientClassName) {
-        this.clientClassName = clientClassName;
-    }
-
 	/**
 	 * Define the prefix for all redis keys.<br>
 	 * Defaults to {@value #DEFAULT_SESSION_KEY_PREFIX}
@@ -390,19 +367,6 @@ public class RedisSessionManager extends ManagerBase {
      */
     public void setIgnorePattern(String ignorePattern) {
 		this.ignorePattern = ignorePattern;
-	}
-
-	/**
-	 * Set the redis endpoint (hostname:port)<br>
-	 * Defaults to {@value #DEFAULT_ENDPOINT}
-	 * @param endpoint
-	 */
-	public void setEndpoint(String endpoint) {
-		this.endpoint = endpoint;
-	}
-
-	public String getEndpoint() {
-		return endpoint;
 	}
 
 	/**
