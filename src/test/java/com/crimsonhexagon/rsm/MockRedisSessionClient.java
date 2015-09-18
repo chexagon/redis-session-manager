@@ -7,11 +7,6 @@ public class MockRedisSessionClient implements RedisSessionClient {
 
 	private ConcurrentHashMap<String, RedisSession> store = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, Expiration> expirationTimes = new ConcurrentHashMap<>();
-	
-	@Override
-	public void initialize(RedisSessionManager manager) {
-		// noop
-	}
 
 	@Override
 	public void save(String key, RedisSession session) {
@@ -46,6 +41,11 @@ public class MockRedisSessionClient implements RedisSessionClient {
 			this.expirationTime = expirationTime;
 			this.timeUnit = timeUnit;
 		}
+	}
+
+	@Override
+	public void shutdown() {
+		//noop
 	}
 
 }

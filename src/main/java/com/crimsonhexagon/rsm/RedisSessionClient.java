@@ -23,12 +23,6 @@ import java.util.concurrent.TimeUnit;
  * @author Steve Ungerer
  */
 public interface RedisSessionClient {
-
-    /**
-     * Initialize the client with the given {@link RedisSessionManager}. This method will be invoked post-instantiation.
-     * @param manager
-     */
-    void initialize(RedisSessionManager manager);
     
 	/**
 	 * Save the session to the given key.
@@ -64,4 +58,9 @@ public interface RedisSessionClient {
 	 * @return
 	 */
 	boolean exists(String key);
+	
+	/**
+	 * Perform any tasks necessary when shutting down
+	 */
+	void shutdown();
 }
