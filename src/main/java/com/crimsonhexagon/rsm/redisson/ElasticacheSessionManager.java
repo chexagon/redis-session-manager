@@ -2,8 +2,8 @@ package com.crimsonhexagon.rsm.redisson;
 
 import org.redisson.Config;
 import org.redisson.ElasticacheServersConfig;
-import org.redisson.connection.LoadBalancer;
-import org.redisson.connection.RoundRobinLoadBalancer;
+import org.redisson.connection.balancer.LoadBalancer;
+import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
 import com.crimsonhexagon.rsm.RedisSessionClient;
 import com.crimsonhexagon.rsm.RedisSessionManager;

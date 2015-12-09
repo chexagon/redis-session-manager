@@ -24,6 +24,7 @@ import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Config;
 import org.redisson.Redisson;
+import org.redisson.RedissonClient;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.codec.SerializationCodec;
@@ -42,21 +43,21 @@ import io.netty.buffer.ByteBufInputStream;
 public class RedissonSessionClient implements RedisSessionClient {
 	protected final Log log = LogFactory.getLog(getClass());
 	
-	private final Redisson redisson;
+	private final RedissonClient redissonClient;
 	
 	public RedissonSessionClient(Config config, ClassLoader containerClassLoader) {
 		config.setCodec(new ContextClassloaderSerializationCodec(containerClassLoader));
-		this.redisson = Redisson.create(config);
+		this.redissonClient = Redisson.create(config);
 	}
 	
 	@Override
 	public void save(String key, RedisSession session) {
-		redisson.getBucket(key).set(session);
+		redissonClient.getBucket(key).set(session);
 	}
 
 	@Override
 	public RedisSession load(String key) {
-		Object obj = redisson.getBucket(key).get();
+		Object obj = redissonClient.getBucket(key).get();
 		if (obj != null) {
 			if (RedisSession.class.isAssignableFrom(obj.getClass())) {
 				return RedisSession.class.cast(obj);
@@ -70,17 +71,17 @@ public class RedissonSessionClient implements RedisSessionClient {
 
 	@Override
 	public void delete(String key) {
-		redisson.getBucket(key).delete();
+		redissonClient.getBucket(key).delete();
 	}
 
 	@Override
 	public void expire(String key, long expirationTime, TimeUnit timeUnit) {
-		redisson.getBucket(key).expire(expirationTime, timeUnit);
+		redissonClient.getBucket(key).expire(expirationTime, timeUnit);
 	}
 
 	@Override
 	public boolean exists(String key) {
-		return redisson.getBucket(key).exists();
+		return redissonClient.getBucket(key).exists();
 	}
 
 	/**
@@ -119,6 +120,6 @@ public class RedissonSessionClient implements RedisSessionClient {
 
 	@Override
 	public void shutdown() {
-		redisson.shutdown();
+		redissonClient.shutdown();
 	}
 }
