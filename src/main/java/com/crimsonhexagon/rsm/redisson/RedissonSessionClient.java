@@ -81,7 +81,7 @@ public class RedissonSessionClient implements RedisSessionClient {
 
 	@Override
 	public boolean exists(String key) {
-		return redissonClient.getBucket(key).exists();
+		return redissonClient.getBucket(key).isExists();
 	}
 
 	/**
