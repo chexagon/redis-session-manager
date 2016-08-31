@@ -117,15 +117,11 @@ public abstract class RedisSessionManager extends ManagerBase {
 		this.requestValve = new RedisSessionRequestValve(this, ignorePattern);
 		getContext().getParent().getPipeline().addValve(requestValve);
         getContext().getPipeline().addValve(requestValve);
-
-		log.info("Will expire sessions after " + getMaxInactiveInterval() + " seconds");
-		setDistributable(true);
+        
+		log.info("Will expire sessions after " + getSessionMaxAliveTime() + " seconds");
 		setState(LifecycleState.STARTING);
 	}
 	
-
-
-
 	@Override
 	protected synchronized void stopInternal() throws LifecycleException {
 		setState(LifecycleState.STOPPING);
@@ -157,7 +153,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		session.setNew(true);
 		session.setValid(true);
 		session.setCreationTime(System.currentTimeMillis());
-		session.setMaxInactiveInterval(getMaxInactiveInterval());
+		session.setMaxInactiveInterval(getSessionMaxAliveTime());
 		session.setId(sessionId);
 		session.tellNew();
 		currentSessionState.set(new RedisSessionState(session, false)); // persisted will be set to true in save()
@@ -269,8 +265,8 @@ public abstract class RedisSessionManager extends ManagerBase {
 			log.debug("Not saving " + redisSession.getId() + " to redis");
 		}
 
-		log.trace("Setting expire on " + redisSession.getId() + " to " + getMaxInactiveInterval());
-		client.expire(sessionKey, getMaxInactiveInterval(), TimeUnit.SECONDS);
+		log.trace("Setting expire on " + redisSession.getId() + " to " + getSessionMaxAliveTime());
+		client.expire(sessionKey, getSessionMaxAliveTime(), TimeUnit.SECONDS);
 	}
 
 	@Override
