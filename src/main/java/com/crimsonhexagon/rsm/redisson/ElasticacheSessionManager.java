@@ -8,6 +8,7 @@ import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
 import com.crimsonhexagon.rsm.RedisSessionClient;
 import com.crimsonhexagon.rsm.RedisSessionManager;
+import com.crimsonhexagon.rsm.util.Platform;
 
 import io.netty.util.internal.StringUtil;
 
@@ -50,7 +51,7 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 		}
 		
 		Config config = new Config()
-				.setUseLinuxNativeEpoll(true);
+			.setUseLinuxNativeEpoll(Platform.isLinux());
 
 		ElasticacheServersConfig ecCfg = config.useElasticacheServers();
 		ecCfg
