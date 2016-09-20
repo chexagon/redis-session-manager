@@ -266,7 +266,10 @@ public abstract class RedisSessionManager extends ManagerBase {
 		}
 
 		log.trace("Setting expire on " + redisSession.getId() + " to " + getSessionMaxAliveTime());
-		client.expire(sessionKey, getSessionMaxAliveTime(), TimeUnit.SECONDS);
+		int maxAliveTime = getSessionMaxAliveTime();
+		maxAliveTime = (maxAliveTime != 0) ? maxAliveTime : DEFAULT_MAX_ALIVE_TIME;
+		
+		client.expire(sessionKey,  maxAliveTime, TimeUnit.SECONDS);
 	}
 
 	@Override
