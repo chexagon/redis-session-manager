@@ -53,6 +53,14 @@ public class RedissonSessionClient implements RedisSessionClient {
 	@Override
 	public void save(String key, RedisSession session) {
 		redissonClient.getBucket(key).set(session);
+		if (log.isTraceEnabled()) {
+		    try {
+		        byte[] size = redissonClient.getConfig().getCodec().getValueEncoder().encode(session);
+		        log.trace(session.getId() + " size: " + size.length);
+		    } catch (Exception e) {
+		        log.error("Failed to record session size", e);
+		    }
+		}
 	}
 
 	@Override
