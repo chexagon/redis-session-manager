@@ -49,7 +49,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 	private boolean forceSaveAfterRequest;
 	private boolean dirtyOnMutation;
 	
-	private ThreadLocal<RedisSessionState> currentSessionState = ThreadLocal.withInitial(RedisSessionState::new);
+	private ThreadLocal<RedisSessionState> currentSessionState = InheritableThreadLocal.withInitial(RedisSessionState::new);
 	
 	private RedisSessionRequestValve requestValve;
 
@@ -117,7 +117,6 @@ public abstract class RedisSessionManager extends ManagerBase {
 
 		this.requestValve = new RedisSessionRequestValve(this, ignorePattern);
 		getContext().getParent().getPipeline().addValve(requestValve);
-        getContext().getPipeline().addValve(requestValve);
         this.sessionExpirationTime = getContext().getSessionTimeout();
         if (this.sessionExpirationTime < 0) {
         	log.warn("Ignoring negative session expiration time");
@@ -133,7 +132,6 @@ public abstract class RedisSessionManager extends ManagerBase {
 		setState(LifecycleState.STOPPING);
 		log.info("Stopping");
 		getContext().getParent().getPipeline().removeValve(requestValve);
-		getContext().getPipeline().removeValve(requestValve);
 		client.shutdown();
 		super.stopInternal();
 	}
