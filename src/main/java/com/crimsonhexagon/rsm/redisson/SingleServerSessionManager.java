@@ -29,7 +29,8 @@ public class SingleServerSessionManager extends RedisSessionManager {
 	 */
 	@Override
 	protected RedisSessionClient buildClient() {
-		Config config = new Config();
+		Config config = new Config()
+			.setUseLinuxNativeEpoll(System.getProperty("os.name").startsWith("Linux"));
 		config.setCodec(new SerializationCodec());
 		config.useSingleServer()
 			.setAddress(getEndpoint())
