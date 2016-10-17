@@ -2,6 +2,7 @@ package com.crimsonhexagon.rsm.redisson;
 
 import org.redisson.Config;
 import org.redisson.ElasticacheServersConfig;
+import org.redisson.ReadMode;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
@@ -48,7 +49,9 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 			}
 		}
 		
-		Config config = new Config();
+		Config config = new Config()
+			.setUseLinuxNativeEpoll(System.getProperty("os.name").startsWith("Linux"));
+
 		ElasticacheServersConfig ecCfg = config.useElasticacheServers();
 		ecCfg
 			.addNodeAddress(StringUtil.split(nodes, ' '))
@@ -57,6 +60,7 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 			.setSlaveConnectionPoolSize(slaveConnectionPoolSize)
 			.setPassword(password)
 			.setTimeout(timeout)
+			.setReadMode(ReadMode.MASTER_SLAVE)
 			.setPingTimeout(pingTimeout)
 			.setRetryAttempts(retryAttempts)
 			.setRetryInterval(retryInterval)
