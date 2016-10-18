@@ -6,9 +6,6 @@ import org.redisson.ReadMode;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
-import com.crimsonhexagon.rsm.RedisSessionClient;
-import com.crimsonhexagon.rsm.RedisSessionManager;
-
 import io.netty.util.internal.StringUtil;
 
 /**
@@ -16,27 +13,20 @@ import io.netty.util.internal.StringUtil;
  *
  * @author Steve Ungerer
  */
-public class ElasticacheSessionManager extends RedisSessionManager {
-	private String nodes;
-	private String loadBalancerClass = RoundRobinLoadBalancer.class.getName();
-	private int masterConnectionPoolSize = 100;
-	private int slaveConnectionPoolSize = 100;
-	private int database = 0;
-	private String password = null;
-	private int timeout = 60000;
-	private int pingTimeout = 1000;
-	private int retryAttempts = 20;
-	private int retryInterval = 1000;
-	private int nodePollInterval = 1000;
+public class ElasticacheSessionManager extends BaseRedissonSessionManager {
+	public static final String DEFAULT_LOAD_BALANCER_CLASS = RoundRobinLoadBalancer.class.getName();
+	public static final int DEFAULT_MASTER_CONN_POOL_SIZE = 100;
+	public static final int DEFAULT_SLAVE_CONN_POOL_SIZE = 100;
+	public static final int DEFAULT_NODE_POLL_INTERVAL = 1_000;
 	
-	/**
-	 * Initialize the {@link RedisSessionClient}
-	 * @throws ClassNotFoundException
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 */
+	private String nodes;
+	private String loadBalancerClass = DEFAULT_LOAD_BALANCER_CLASS;
+	private int masterConnectionPoolSize = DEFAULT_MASTER_CONN_POOL_SIZE;
+	private int slaveConnectionPoolSize = DEFAULT_SLAVE_CONN_POOL_SIZE;
+	private int nodePollInterval = DEFAULT_NODE_POLL_INTERVAL;
+	
 	@Override
-	protected RedisSessionClient buildClient() {
+	protected Config configure(Config config) {
 		if (nodes == null || nodes.trim().length() == 0) {
 			throw new IllegalStateException("Manager must specify node string. e.g., nodes=\"node1.com:6379 node2.com:6379\"");
 		}
@@ -49,9 +39,6 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 			}
 		}
 		
-		Config config = new Config()
-			.setUseLinuxNativeEpoll(System.getProperty("os.name").startsWith("Linux"));
-
 		ElasticacheServersConfig ecCfg = config.useElasticacheServers();
 		ecCfg
 			.addNodeAddress(StringUtil.split(nodes, ' '))
@@ -68,7 +55,7 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 		if (lb != null) {
 			ecCfg.setLoadBalancer(lb);
 		}
-		return new RedissonSessionClient(config, getContainerClassLoader());
+		return config;
 	}
 
 	public String getNodes() {
@@ -101,54 +88,6 @@ public class ElasticacheSessionManager extends RedisSessionManager {
 
 	public void setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
 		this.slaveConnectionPoolSize = slaveConnectionPoolSize;
-	}
-
-	public int getDatabase() {
-		return database;
-	}
-
-	public void setDatabase(int database) {
-		this.database = database;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public int getTimeout() {
-		return timeout;
-	}
-
-	public void setTimeout(int timeout) {
-		this.timeout = timeout;
-	}
-
-	public int getPingTimeout() {
-		return pingTimeout;
-	}
-
-	public void setPingTimeout(int pingTimeout) {
-		this.pingTimeout = pingTimeout;
-	}
-
-	public int getRetryAttempts() {
-		return retryAttempts;
-	}
-
-	public void setRetryAttempts(int retryAttempts) {
-		this.retryAttempts = retryAttempts;
-	}
-
-	public int getRetryInterval() {
-		return retryInterval;
-	}
-
-	public void setRetryInterval(int retryInterval) {
-		this.retryInterval = retryInterval;
 	}
 
 	public int getNodePollInterval() {
