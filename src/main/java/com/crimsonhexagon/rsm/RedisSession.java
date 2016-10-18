@@ -124,6 +124,7 @@ public class RedisSession extends StandardSession {
 	}
 
 	/**
+	 * Persist the session to redis if so configured.
 	 * @return was the session saved to redis
 	 */
 	private boolean saveOnChange() {

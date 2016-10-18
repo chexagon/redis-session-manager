@@ -19,8 +19,8 @@
 		<connection>scm:git:git@github.com:chexagon/redis-session-manager.git</connection>
 		<developerConnection>scm:git:git@github.com:chexagon/redis-session-manager.git</developerConnection>
 		<url>https://github.com/chexagon/redis-session-manager</url>
-	  <tag>HEAD</tag>
-  </scm>
+		<tag>HEAD</tag>
+	</scm>
 	<developers>
 		<developer>
 			<id>scubasau</id>

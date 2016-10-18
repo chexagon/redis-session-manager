@@ -15,28 +15,19 @@
  */
 package com.crimsonhexagon.rsm.redisson;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.catalina.util.CustomObjectInputStream;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Config;
 import org.redisson.Redisson;
 import org.redisson.RedissonClient;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.codec.SerializationCodec;
 
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-
 /**
- * Redisson-backed {@link RedisSessionClient} for a single server configuration
+ * Redisson-backed {@link RedisSessionClient}
  *
  * @author Steve Ungerer
  */
@@ -45,8 +36,7 @@ public class RedissonSessionClient implements RedisSessionClient {
 	
 	private final RedissonClient redissonClient;
 	
-	public RedissonSessionClient(Config config, ClassLoader containerClassLoader) {
-		config.setCodec(new ContextClassloaderSerializationCodec(containerClassLoader));
+	public RedissonSessionClient(Config config) {
 		this.redissonClient = Redisson.create(config);
 	}
 	
@@ -90,40 +80,6 @@ public class RedissonSessionClient implements RedisSessionClient {
 	@Override
 	public boolean exists(String key) {
 		return redissonClient.getBucket(key).isExists();
-	}
-
-	/**
-	 * Extension of {@link SerializationCodec} to use tomcat's {@link CustomObjectInputStream} with the {@link ClassLoader} provided 
-	 */
-	public static class ContextClassloaderSerializationCodec extends SerializationCodec {
-		private final ClassLoader containerClassLoader;
-		
-		public ContextClassloaderSerializationCodec(ClassLoader containerClassLoader) {
-			this.containerClassLoader = containerClassLoader;
-		}
-		
-	    @Override
-	    public Decoder<Object> getValueDecoder() {
-	        return new Decoder<Object>() {
-	            @Override
-	            public Object decode(ByteBuf buf, State state) throws IOException {
-	    	        try {
-	    	            ByteBufInputStream in = new ByteBufInputStream(buf);
-	    	            final ObjectInputStream ois;
-	    	            if (containerClassLoader != null) {
-	    	            	ois = new CustomObjectInputStream(in, containerClassLoader);
-	    	            } else {
-	    	            	ois = new ObjectInputStream(in);
-	    	            }
-	    	            return ois.readObject();
-	    	        } catch (IOException io) {
-	    	        	throw io;
-	    	        } catch (Exception e) {
-	    	            throw new IOException(e);
-	    	        }
-	            }
-	        };
-	    }
 	}
 
 	@Override
