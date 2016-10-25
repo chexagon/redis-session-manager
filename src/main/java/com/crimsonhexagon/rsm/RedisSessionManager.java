@@ -157,7 +157,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		session.setNew(true);
 		session.setValid(true);
 		session.setCreationTime(System.currentTimeMillis());
-		session.setMaxInactiveInterval(sessionExpirationTime);
+		session.setMaxInactiveInterval(sessionExpirationTime * 60);
 		session.setId(sessionId);
 		session.tellNew();
 		currentSessionState.set(new RedisSessionState(session, false)); // persisted will be set to true in save()
