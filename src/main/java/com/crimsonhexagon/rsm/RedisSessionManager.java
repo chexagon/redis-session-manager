@@ -137,13 +137,37 @@ public abstract class RedisSessionManager extends ManagerBase {
 
 	@Override
 	public Session createSession(String requestedSessionId) {
+		RedisSession session = createEmptySession();
+		session.setNew(true);
+		session.setValid(true);
+		session.setCreationTime(System.currentTimeMillis());
+		session.setMaxInactiveInterval(sessionExpirationTime * 60);
+		session.setId(requestedSessionId == null ? generateSessionId() : requestedSessionId);
+		session.tellNew();
+		currentSessionState.set(new RedisSessionState(session, false)); // persisted will be set to true in save()
+		save(session, true);
+		return session;
+	}
 
+	@Override
+	protected void changeSessionId(Session session, String newId, boolean notifySessionListeners, boolean notifyContainerListeners) {
+		final String oldId = session.getId();
+		super.changeSessionId(session, newId, notifySessionListeners, notifyContainerListeners);
+		if (RedisSession.class.isAssignableFrom(session.getClass())) {
+			final RedisSession rSession = RedisSession.class.cast(session);
+			currentSessionState.set(new RedisSessionState(rSession, false));
+			client.delete(generateRedisSessionKey(oldId));
+			save(rSession, true);
+		} else {
+			throw new UnsupportedOperationException("Could not change a session ID with class " + session.getClass());
+		}
+	}
+
+	@Override
+	protected String generateSessionId() {
 		String sessionId = null;
 		while (sessionId == null) {
-			if (requestedSessionId == null || requestedSessionId.trim().length() == 0) {
-				requestedSessionId = generateSessionId();
-			}
-			sessionId = prefixJvmRoute(requestedSessionId);
+			sessionId = prefixJvmRoute(super.generateSessionId());
 			if (client.exists(generateRedisSessionKey(sessionId))) {
 				log.debug("Rejecting duplicate sessionId: " + sessionId);
 				sessionId = null;
@@ -151,17 +175,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 				log.debug("Generated new sessionId: " + sessionId);
 			}
 		}
-		
-		RedisSession session = createEmptySession();
-		session.setNew(true);
-		session.setValid(true);
-		session.setCreationTime(System.currentTimeMillis());
-		session.setMaxInactiveInterval(sessionExpirationTime * 60);
-		session.setId(sessionId);
-		session.tellNew();
-		currentSessionState.set(new RedisSessionState(session, false)); // persisted will be set to true in save()
-		save(session, true);
-		return session;
+		return sessionId;
 	}
 
 	/**
@@ -248,6 +262,10 @@ public abstract class RedisSessionManager extends ManagerBase {
 				String e = en.nextElement();
 				log.trace("  " + e + ": " + String.valueOf(redisSession.getAttribute(e)));
 			}
+		}
+		
+		if (currentSessionState.get().session == null) {
+			currentSessionState.set(new RedisSessionState(redisSession, false));
 		}
 
 		final boolean currentSessionPersisted = currentSessionState.get().persisted;
