@@ -123,7 +123,6 @@ public abstract class RedisSessionManager extends ManagerBase {
         	this.sessionExpirationTime = 0;
         }
 		log.info("Will expire sessions after " + sessionExpirationTime + " minutes");
-		setDistributable(true);
 		setState(LifecycleState.STARTING);
 	}
 
