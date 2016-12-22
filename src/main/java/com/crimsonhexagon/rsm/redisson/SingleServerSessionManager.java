@@ -1,6 +1,6 @@
 package com.crimsonhexagon.rsm.redisson;
 
-import org.redisson.Config;
+import org.redisson.config.Config;
 
 /**
  * Manager for a single server using redisson

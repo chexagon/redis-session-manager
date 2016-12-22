@@ -6,10 +6,10 @@ import java.io.ObjectInputStream;
 import org.apache.catalina.util.CustomObjectInputStream;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
-import org.redisson.Config;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.codec.SerializationCodec;
+import org.redisson.config.Config;
 
 import com.crimsonhexagon.rsm.RedisSessionClient;
 import com.crimsonhexagon.rsm.RedisSessionManager;

@@ -1,12 +1,10 @@
 package com.crimsonhexagon.rsm.redisson;
 
-import org.redisson.Config;
-import org.redisson.ElasticacheServersConfig;
-import org.redisson.ReadMode;
+import org.redisson.config.Config;
+import org.redisson.config.ElasticacheServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
-
-import io.netty.util.internal.StringUtil;
 
 /**
  * Manager for an AWS ElastiCache replication group
@@ -41,7 +39,7 @@ public class ElasticacheSessionManager extends BaseRedissonSessionManager {
 		
 		ElasticacheServersConfig ecCfg = config.useElasticacheServers();
 		ecCfg
-			.addNodeAddress(StringUtil.split(nodes, ' '))
+			.addNodeAddress(nodes.trim().split("\\s+"))
 			.setDatabase(database)
 			.setMasterConnectionPoolSize(masterConnectionPoolSize)
 			.setSlaveConnectionPoolSize(slaveConnectionPoolSize)

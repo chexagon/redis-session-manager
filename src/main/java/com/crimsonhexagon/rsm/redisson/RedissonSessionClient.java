@@ -19,9 +19,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
-import org.redisson.Config;
 import org.redisson.Redisson;
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
