@@ -242,6 +242,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 			if (session != null) {
 				log.debug("Found session " + id + " in redis");
 				session.postDeserialization(this);
+				session.setNew(false); // Fix issue #12
 				currentSessionState.set(new RedisSessionState(session, true));
 			} else {
 				log.debug("Session " + id + " not found in redis");
