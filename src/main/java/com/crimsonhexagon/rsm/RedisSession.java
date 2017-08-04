@@ -15,10 +15,21 @@
  */
 package com.crimsonhexagon.rsm;
 
+import java.beans.PropertyChangeSupport;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.security.AccessController;
 import java.security.Principal;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
+import com.crimsonhexagon.rsm.note.SavedRequestConverter;
+import org.apache.catalina.authenticator.Constants;
 import org.apache.catalina.session.StandardSession;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -41,13 +52,30 @@ public class RedisSession extends StandardSession {
 	private static final Log log = LogFactory.getLog(RedisSession.class);
 	private static final long serialVersionUID = 1L;
 
+	/* Hack for tomcat form-based-authentication support */
+	private static final Map<String, Function<Object, Object>> serializableNoteConverters = new HashMap<>();
+
 	private transient boolean dirty;
+
+	/**
+	 * Serializable notes (for form-base authentication support)
+	 */
+	private Map<String, Object> serializableNotes = new HashMap<>();
+
+	/* Hack for tomcat form-based-authentication support: principal stored in redis (otherwise, it's
+	 * transient in the superclass */
+	private Principal principal = null;
 
 	/**
 	 * Constructs a new {@link RedisSession} with no manager. Intended for deserialization usage.
 	 */
 	protected RedisSession() {
 		super(null);
+	}
+
+	static {
+		addSerializableNoteConverter(Constants.FORM_REQUEST_NOTE, new SavedRequestConverter());
+		addSerializableNoteConverter(Constants.FORM_PRINCIPAL_NOTE, (object) -> object);
 	}
 
 	public RedisSession(RedisSessionManager manager) {
@@ -121,6 +149,7 @@ public class RedisSession extends StandardSession {
 	public void setPrincipal(Principal principal) {
 		this.dirty = true;
 		super.setPrincipal(principal);
+		this.principal = principal;
 	}
 
 	/**
@@ -147,9 +176,128 @@ public class RedisSession extends StandardSession {
 		if (listeners == null) {
 			listeners = new ArrayList<>();
 		}
+		if (support == null) {
+			setField("support", new PropertyChangeSupport(this));
+		}
 		if (notes == null) {
 			notes = new ConcurrentHashMap<>();
 		}
+		serializableNotes.forEach((name, value) -> {
+			super.setNote(name, convertNoteToOriginalValue(name, value));
+		});
+		super.principal = this.principal;
 	}
 
+	/**
+	 * This is needed to restore final transient field values of Tomcat Session class
+	 * after session deserialization
+	 *
+	 * @exception IllegalArgumentException if an exception occurs
+	 */
+	private void setField(String name, Object value) {
+		Field field = null;
+		try {
+			field = StandardSession.class.getDeclaredField(name);
+			removeFinalModifier(field);
+			field.set(this, value);
+
+		} catch (NoSuchFieldException e) {
+			throw new IllegalStateException("Inexistant field " + name + " in class "
+					+ this.getClass().getName() + e.toString(), e);
+		} catch (IllegalAccessException e) {
+			throw new IllegalStateException("Error setting field value " + name + e.toString(), e);
+		}
+	}
+
+	/**
+	 * Removes final modifier from field
+	 *
+	 * @exception IllegalStateException if an exception occurs
+	 */
+	private void removeFinalModifier(Field field) {
+		final Field modifiersField;
+		try {
+			modifiersField = Field.class.getDeclaredField("modifiers");
+			AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
+				public Object run() throws Exception {
+					if(!modifiersField.isAccessible()) {
+						modifiersField.setAccessible(true);
+					}
+					modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+					return null;
+				}
+			});
+		} catch (NoSuchFieldException|PrivilegedActionException e) {
+			throw new IllegalStateException("Error removing final modifier to field: " + field
+					+ " : " + e.toString(), e);
+		}
+	}
+
+	@Override
+	public void removeNote(String name) {
+		super.removeNote(name);
+		if (shouldSerializeNote(name)) {
+			removeSerializedNote(name);
+		}
+	}
+
+	@Override
+	public void setNote(String name, Object value) {
+		super.setNote(name, value);
+		if (shouldSerializeNote(name)) {
+			setSerializedNote(name, value);
+		}
+	}
+
+	private void setSerializedNote(String name, Object value) {
+		serializableNotes.put(name, convertNoteToSerializableValue(name, value));
+		if (!saveOnChange()) {
+			this.dirty = true;
+			if (log.isTraceEnabled()) {
+				log.trace("Marking session as dirty. Note [" + name + "] set to [" + value + "]");
+			}
+		} else {
+			if (log.isTraceEnabled()) {
+				log.trace("Saved session onchange. Note [" + name + "] set to [" + value + "]");
+			}
+		}
+	}
+
+	private void removeSerializedNote(String name) {
+		if (! serializableNotes.containsKey(name)) {
+			return;
+		}
+		serializableNotes.remove(name);
+		if (!saveOnChange()) {
+			this.dirty = true;
+			if (log.isTraceEnabled()) {
+				log.trace("Marking session as dirty. Note [" + name + "] was removed");
+			}
+		} else {
+			log.debug("Saved session onchange; Note [" + name + "] was removed");
+		}
+	}
+
+	private boolean shouldSerializeNote(String name) {
+		return serializableNoteConverters.containsKey(name);
+	}
+
+	protected Object convertNoteToSerializableValue(String name, Object value) {
+		if (value == null) {
+			return null;
+		}
+		Function<Object, Object> converter = serializableNoteConverters.get(name);
+		if (converter == null) {
+			throw new IllegalArgumentException("Unsupported serializable note attribute " + name);
+		}
+		return converter.apply(value);
+	}
+
+	protected Object convertNoteToOriginalValue(String name, Object value) {
+		return convertNoteToSerializableValue(name, value);
+	}
+
+	public static void addSerializableNoteConverter(String name, Function<Object, Object> converter) {
+		serializableNoteConverters.put(name, converter);
+	}
 }
