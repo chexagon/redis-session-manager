@@ -41,18 +41,27 @@ public abstract class RedisSessionManager extends ManagerBase {
 	 */
 	public static final String DEFAULT_SESSION_KEY_PREFIX="_rsm_";
 	
+	static final int DO_NOT_CHECK = -1;
+	
 	private int sessionExpirationTime; // in minutes
-	private RedisSessionClient client;
+	private RedisSessionClient _client; // access should be done via #getClient()
 	private String sessionKeyPrefix = DEFAULT_SESSION_KEY_PREFIX;
 	private String ignorePattern = RedisSessionRequestValve.DEFAULT_IGNORE_PATTERN;
 	private boolean saveOnChange;
 	private boolean forceSaveAfterRequest;
 	private boolean dirtyOnMutation;
+	private int maxSessionAttributeSize = DO_NOT_CHECK;
+	private int maxSessionSize = DO_NOT_CHECK;
+	private boolean allowOversizedSessions;
 	
 	private ThreadLocal<RedisSessionState> currentSessionState = InheritableThreadLocal.withInitial(RedisSessionState::new);
 	
 	private RedisSessionRequestValve requestValve;
 
+	protected RedisSessionClient getClient() {
+	    return _client;
+	}
+	
 	/**
 	 * Construct the {@link RedisSessionClient}
 	 * @return
@@ -61,6 +70,15 @@ public abstract class RedisSessionManager extends ManagerBase {
 	 * @throws IllegalAccessException
 	 */
 	protected abstract RedisSessionClient buildClient() throws ClassNotFoundException, InstantiationException, IllegalAccessException;
+
+	/**
+	 * Get the encoded size of the object
+	 * @param obj
+	 * @return
+	 */
+	int getEncodedSize(Object obj) {
+	    return getClient().getEncodedSize(obj);
+	}
 	
 	/**
 	 * Should the {@link RedisSession} be saved immediately when an attribute changes
@@ -109,7 +127,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		super.startInternal();
 
 		try {
-			this.client = buildClient();
+			this._client = buildClient();
 		} catch (Throwable t) {
 			log.fatal("Unable to load serializer", t);
 			throw new LifecycleException(t);
@@ -131,7 +149,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		setState(LifecycleState.STOPPING);
 		log.info("Stopping");
 		getContext().getParent().getPipeline().removeValve(requestValve);
-		client.shutdown();
+		getClient().shutdown();
 		super.stopInternal();
 	}
 
@@ -156,7 +174,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		if (RedisSession.class.isAssignableFrom(session.getClass())) {
 			final RedisSession rSession = RedisSession.class.cast(session);
 			currentSessionState.set(new RedisSessionState(rSession, false));
-			client.delete(generateRedisSessionKey(oldId));
+			getClient().delete(generateRedisSessionKey(oldId));
 			save(rSession, true);
 		} else {
 			throw new UnsupportedOperationException("Could not change a session ID with class " + session.getClass());
@@ -168,7 +186,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		String sessionId = null;
 		while (sessionId == null) {
 			sessionId = prefixJvmRoute(super.generateSessionId());
-			if (client.exists(generateRedisSessionKey(sessionId))) {
+			if (getClient().exists(generateRedisSessionKey(sessionId))) {
 				log.debug("Rejecting duplicate sessionId: " + sessionId);
 				sessionId = null;
 			} else {
@@ -235,7 +253,7 @@ public abstract class RedisSessionManager extends ManagerBase {
 		} else {
 			log.debug("Loading from redis");
 			try {
-				session = client.load(generateRedisSessionKey(id));
+				session = getClient().load(generateRedisSessionKey(id));
 			} catch (Throwable t) {
 				log.error("Failed to load session [" + id + "] from redis", t);
 			}
@@ -275,9 +293,20 @@ public abstract class RedisSessionManager extends ManagerBase {
 			|| redisSession.isDirty()
 			|| !currentSessionPersisted
 		) {
+		    if (getMaxSessionSize() != DO_NOT_CHECK) {
+		        final int size = getEncodedSize(redisSession);
+		        if (size > getMaxSessionSize()) {
+		            if (!isAllowOversizedSessions()) {
+		                log.error("Not saving [" + redisSession.getId() + "] to redis. Size of [" + size + "] exceeds max of [" + getMaxSessionSize() +"]");
+		                return;
+		            } else {
+		                log.error("Session [" + redisSession.getId() + "] size of [" + size + "] exceeds max of [" + getMaxSessionSize() +"]; still saving");
+		            }
+		        }
+		    }
 			log.debug("Saving " + redisSession.getId() + " to redis");
 			try {
-				client.save(sessionKey, redisSession);
+			    getClient().save(sessionKey, redisSession);
 			} catch (Throwable t) {
 				log.error("Failed to save session [" + redisSession.getId() + "]", t);
 			}
@@ -288,14 +317,14 @@ public abstract class RedisSessionManager extends ManagerBase {
 		}
 
 		log.trace("Setting expire on " + redisSession.getId() + " to " + sessionExpirationTime);
-		client.expire(sessionKey, sessionExpirationTime, TimeUnit.MINUTES);
+		getClient().expire(sessionKey, sessionExpirationTime, TimeUnit.MINUTES);
 	}
 
 	@Override
 	public void remove(Session session, boolean update) {
 		log.debug("Removing session ID : " + session.getId());
 		try {
-			client.delete(generateRedisSessionKey(session.getId()));
+		    getClient().delete(generateRedisSessionKey(session.getId()));
 		} catch (Throwable t) {
 			log.error("Failed to remove session [" + session.getId() + "]", t);
 		}
@@ -387,7 +416,50 @@ public abstract class RedisSessionManager extends ManagerBase {
 		this.ignorePattern = ignorePattern;
 	}
 
-	/**
+    /**
+     * Set a maximum size, in bytes, of each attribute within a session. If an attribute exceeds this size
+     * it will not be stored in the session.<br>
+     * Performance note: values will be encoded twice, once for size checking and once for actual storage.
+     * @param maxSessionAttributeSize
+     */
+    public void setMaxSessionAttributeSize(int maxSessionAttributeSize) {
+        this.maxSessionAttributeSize = maxSessionAttributeSize;
+    }
+
+    int getMaxSessionAttributeSize() {
+        return maxSessionAttributeSize;
+    }
+
+    /**
+     * Set a maximum size, in bytes, of the entire serialized session in redis. If the session exceeds this size
+     * it will not be saved to redis.<br>
+     * Performance note: sessions will be encoded twice, once for size checking and once for actual storage.
+     * @param maxSessionSize
+     */
+    public void setMaxSessionSize(int maxSessionSize) {
+        this.maxSessionSize = maxSessionSize;
+    }
+
+    int getMaxSessionSize() {
+        return maxSessionSize;
+    }
+
+    /**
+     * When {@link #setMaxSessionAttributeSize(int)} or {@link #setMaxSessionSize(int)} is used, the default
+     * behavior is to prevent sessions with attributes or total size exceeding the configured value.
+     * If {@link #allowOversizedSessions} is <code>true</code> then these exceptional attrs/sessions will
+     * only be logged and will still be saved to redis.
+     * @param allowAndLogSessionSizeErrors
+     */
+    public void setAllowOversizedSessions(boolean allowAndLogSessionSizeErrors) {
+        this.allowOversizedSessions = allowAndLogSessionSizeErrors;
+    }
+    
+    boolean isAllowOversizedSessions() {
+        return allowOversizedSessions;
+    }
+
+    /**
 	 * Get the current {@link RedisSessionState}
 	 * @return
 	 */

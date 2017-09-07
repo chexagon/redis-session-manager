@@ -15,13 +15,13 @@
  */
 package com.crimsonhexagon.rsm;
 
-import java.security.Principal;
-import java.util.ArrayList;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.catalina.session.StandardSession;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
+
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Extension of {@link StandardSession} to
@@ -72,6 +72,11 @@ public class RedisSession extends StandardSession {
 	}
 
 	@Override
+    public RedisSessionManager getManager() {
+        return RedisSessionManager.class.cast(super.getManager());
+    }
+
+    @Override
 	public void setId(String id) {
 		// no super() invocation; don't want to remove/add the session
 		this.id = id;
@@ -82,9 +87,22 @@ public class RedisSession extends StandardSession {
 	 */
 	@Override
 	public void setAttribute(String key, Object value) {
+		RedisSessionManager rsm = getManager();
+		if (rsm.getMaxSessionAttributeSize() != RedisSessionManager.DO_NOT_CHECK) {
+		    int size = rsm.getEncodedSize(value);
+		    if (size > rsm.getMaxSessionAttributeSize()) {
+		        if (!rsm.isAllowOversizedSessions()) {
+		            log.error("Attribute [" + key + "] with size [" + size + "] exceeds max attr size [" + rsm.getMaxSessionAttributeSize() + "]; not storing in session");
+		            return;
+		        } else {
+		            log.error("Attribute [" + key + "] with size [" + size + "] exceeds max attr size [" + rsm.getMaxSessionAttributeSize() + "]");
+		        }
+		    }
+		}
+		
 		Object oldValue = getAttribute(key); // must be retrieved before invoking super()
 		super.setAttribute(key, value);
-		if (RedisSessionManager.class.cast(manager).isDirtyOnMutation() 
+		if (rsm.isDirtyOnMutation() 
 			|| (value != null && (oldValue == null || !value.equals(oldValue)))
 			|| (oldValue != null && (value == null || !oldValue.equals(value)))
 		) {
@@ -128,10 +146,9 @@ public class RedisSession extends StandardSession {
 	 * @return was the session saved to redis
 	 */
 	private boolean saveOnChange() {
-		if (RedisSessionManager.class.isAssignableFrom(this.manager.getClass())
-			&& RedisSessionManager.class.cast(this.manager).isSaveOnChange()
-		) {
-			RedisSessionManager.class.cast(this.manager).save(this, true);
+	    RedisSessionManager rsm = getManager();
+		if (rsm.isSaveOnChange()) {
+			rsm.save(this, true);
 			return true;
 		}
 		return false;

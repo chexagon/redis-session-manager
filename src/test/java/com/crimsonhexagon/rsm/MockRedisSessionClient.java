@@ -1,10 +1,14 @@
 package com.crimsonhexagon.rsm;
 
+import org.redisson.client.codec.Codec;
+import org.redisson.codec.SerializationCodec;
+
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class MockRedisSessionClient implements RedisSessionClient {
-
+    private Codec codec = new SerializationCodec();
 	private ConcurrentHashMap<String, RedisSession> store = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, Expiration> expirationTimes = new ConcurrentHashMap<>();
 
@@ -47,5 +51,14 @@ public class MockRedisSessionClient implements RedisSessionClient {
 	public void shutdown() {
 		//noop
 	}
+
+    @Override
+    public int getEncodedSize(Object obj) {
+        try {
+            return codec.getValueEncoder().encode(obj).length;
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
 }
