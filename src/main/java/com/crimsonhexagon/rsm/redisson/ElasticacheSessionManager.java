@@ -1,8 +1,8 @@
 package com.crimsonhexagon.rsm.redisson;
 
 import org.redisson.config.Config;
-import org.redisson.config.ElasticacheServersConfig;
 import org.redisson.config.ReadMode;
+import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.connection.balancer.LoadBalancer;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 
@@ -37,7 +37,7 @@ public class ElasticacheSessionManager extends BaseRedissonSessionManager {
 			}
 		}
 		
-		ElasticacheServersConfig ecCfg = config.useElasticacheServers();
+		ReplicatedServersConfig ecCfg = config.useReplicatedServers();
 		ecCfg
 			.addNodeAddress(nodes.trim().split("\\s+"))
 			.setDatabase(database)
