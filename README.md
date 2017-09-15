@@ -46,7 +46,7 @@ Usage
 * _ignorePattern_: Java Pattern String to be matched against the request URI (_does not include the query string_). If matched, the request will not be processed by the redis session manager.
 * _maxSessionAttributeSize_: if not -1 (RedisSessionManager#DO_NOT_CHECK) specifies a maximum _encoded_ size for a session attribute value. Attributes larger than this size will be logged and will not be stored in the session.
 * _maxSessionSize_: if not -1 (RedisSessionManager#DO_NOT_CHECK) specifies a maximum _encoded_ size for the entire session. Sessions larger than this size will be logged and will not be persisted to redis.
-*_allowOversizedSessions_: if _true_ will allow sessions exceeding the configurations in _maxSessionAttributeSize_ and _maxSessionSize_ to be saved. An error will still be logged for any sessions exceeding the size. This attribute has no effect if neither _maxSessionAttributeSize_ nor _maxSessionSize_ are specified.
+* _allowOversizedSessions_: if _true_ will allow sessions exceeding the configurations in _maxSessionAttributeSize_ and _maxSessionSize_ to be saved. An error will still be logged for any sessions exceeding the size. This attribute has no effect if neither _maxSessionAttributeSize_ nor _maxSessionSize_ are specified.
 
 AWS ElastiCache usage
 -----
