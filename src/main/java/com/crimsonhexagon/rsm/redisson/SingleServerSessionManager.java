@@ -8,7 +8,7 @@ import org.redisson.config.Config;
  * @author Steve Ungerer
  */
 public class SingleServerSessionManager extends BaseRedissonSessionManager {
-	public static final String DEFAULT_ENDPOINT = "localhost:6379";
+	public static final String DEFAULT_ENDPOINT = "redis://localhost:6379";
 	public static final int DEFAULT_CONN_POOL_SIZE = 100;
 	
 	private String endpoint = DEFAULT_ENDPOINT;
