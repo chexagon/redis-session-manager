@@ -20,7 +20,7 @@ Usage
 * Full configuration (showing default values):
 ```
 <Manager className="com.crimsonhexagon.rsm.redisson.SingleServerSessionManager"
-	endpoint="localhost:6379"
+	endpoint="redis://localhost:6379"
 	sessionKeyPrefix="_rsm_"
 	saveOnChange="false"
 	forceSaveAfterRequest="false"
@@ -53,7 +53,7 @@ AWS ElastiCache usage
 Version 2.0.0 added additional support for ElastiCache Replication Groups. Applicable configuration:
 ```
 <Manager className="com.crimsonhexagon.rsm.redisson.ElasticacheSessionManager"
-	nodes="node1.cache.amazonaws.com:6379 node2.cache.amazonaws.com:6379 ..."
+	nodes="redis://node1.cache.amazonaws.com:6379 redis://node2.cache.amazonaws.com:6379 ..."
 	nodePollInterval="1000"
 	sessionKeyPrefix="_rsm_"
 	saveOnChange="false"
