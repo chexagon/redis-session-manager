@@ -86,7 +86,7 @@ public class RedissonSessionClient implements RedisSessionClient {
 	@Override
     public int getEncodedSize(Object obj) {
 	    try {
-            return redissonClient.getConfig().getCodec().getValueEncoder().encode(obj).length;
+            return redissonClient.getConfig().getCodec().getValueEncoder().encode(obj).capacity();
         } catch (IOException e) {
             throw new IllegalArgumentException(e); // redisson style
         }
