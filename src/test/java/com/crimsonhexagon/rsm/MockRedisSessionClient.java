@@ -55,7 +55,7 @@ public class MockRedisSessionClient implements RedisSessionClient {
     @Override
     public int getEncodedSize(Object obj) {
         try {
-            return codec.getValueEncoder().encode(obj).length;
+            return codec.getValueEncoder().encode(obj).readableBytes();
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
