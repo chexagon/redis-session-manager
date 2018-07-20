@@ -10,6 +10,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
+import org.redisson.config.TransportMode;
 
 import com.crimsonhexagon.rsm.RedisSessionClient;
 import com.crimsonhexagon.rsm.RedisSessionManager;
@@ -44,7 +45,7 @@ public abstract class BaseRedissonSessionManager extends RedisSessionManager {
 	protected final RedisSessionClient buildClient() throws ClassNotFoundException, InstantiationException, IllegalAccessException {
 		Config config = new Config()
 			.setCodec(new ContextClassloaderSerializationCodec(getContainerClassLoader()))
-			.setUseLinuxNativeEpoll(isEpollSupported());
+			.setTransportMode(isEpollSupported() ? TransportMode.EPOLL : TransportMode.NIO);
 		return new RedissonSessionClient(configure(config));
 	}
 
