@@ -15,13 +15,14 @@
  */
 package com.crimsonhexagon.rsm.redisson;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
-import org.redisson.Config;
 import org.redisson.Redisson;
-import org.redisson.RedissonClient;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
@@ -45,8 +46,8 @@ public class RedissonSessionClient implements RedisSessionClient {
 		redissonClient.getBucket(key).set(session);
 		if (log.isTraceEnabled()) {
 		    try {
-		        byte[] size = redissonClient.getConfig().getCodec().getValueEncoder().encode(session);
-		        log.trace(session.getId() + " size: " + size.length);
+		        int size = getEncodedSize(session);
+		        log.trace(session.getId() + " size: " + size);
 		    } catch (Exception e) {
 		        log.error("Failed to record session size", e);
 		    }
@@ -83,6 +84,15 @@ public class RedissonSessionClient implements RedisSessionClient {
 	}
 
 	@Override
+    public int getEncodedSize(Object obj) {
+	    try {
+            return redissonClient.getConfig().getCodec().getValueEncoder().encode(obj).readableBytes();
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e); // redisson style
+        }
+    }
+
+    @Override
 	public void shutdown() {
 		redissonClient.shutdown();
 	}

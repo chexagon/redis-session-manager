@@ -20,12 +20,15 @@ Usage
 * Full configuration (showing default values):
 ```
 <Manager className="com.crimsonhexagon.rsm.redisson.SingleServerSessionManager"
-	endpoint="localhost:6379"
+	endpoint="redis://localhost:6379"
 	sessionKeyPrefix="_rsm_"
 	saveOnChange="false"
 	forceSaveAfterRequest="false"
 	dirtyOnMutation="false"
 	ignorePattern=".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$"
+	maxSessionAttributeSize="-1"
+	maxSessionSize="-1"
+	allowOversizedSessions="false"
 	connectionPoolSize="100"
 	database="0"
 	password="<null>"
@@ -39,21 +42,27 @@ Usage
 * _sessionKeyPrefix_: prefix for redis keys. Useful for situations where 1 redis cluster serves multiple application clusters with potentially conflicting session IDs.
 * _saveOnChange_: if _true_, the session will be persisted to redis immediately when any attribute is modified. When _false_, a modified session is persisted to redis when the request is complete.
 * _forceSaveAfterRequest_: if _true_, the session will be persisted to redis when the request completes regardless of whether the session has detected a change to its state.
+* _dirtyOnMutation_: see "Notes on object mutation" below.
 * _ignorePattern_: Java Pattern String to be matched against the request URI (_does not include the query string_). If matched, the request will not be processed by the redis session manager.
-
+* _maxSessionAttributeSize_: if not -1 (RedisSessionManager#DO_NOT_CHECK) specifies a maximum _encoded_ size for a session attribute value. Attributes larger than this size will be logged and will not be stored in the session.
+* _maxSessionSize_: if not -1 (RedisSessionManager#DO_NOT_CHECK) specifies a maximum _encoded_ size for the entire session. Sessions larger than this size will be logged and will not be persisted to redis.
+* _allowOversizedSessions_: if _true_ will allow sessions exceeding the configurations in _maxSessionAttributeSize_ and _maxSessionSize_ to be saved. An error will still be logged for any sessions exceeding the size. This attribute has no effect if neither _maxSessionAttributeSize_ nor _maxSessionSize_ are specified.
 
 AWS ElastiCache usage
 -----
 Version 2.0.0 added additional support for ElastiCache Replication Groups. Applicable configuration:
 ```
 <Manager className="com.crimsonhexagon.rsm.redisson.ElasticacheSessionManager"
-	nodes="node1.cache.amazonaws.com:6379 node2.cache.amazonaws.com:6379 ..."
+	nodes="redis://node1.cache.amazonaws.com:6379 redis://node2.cache.amazonaws.com:6379 ..."
 	nodePollInterval="1000"
 	sessionKeyPrefix="_rsm_"
 	saveOnChange="false"
 	forceSaveAfterRequest="false"
 	dirtyOnMutation="false"
 	ignorePattern=".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$"
+	maxSessionAttributeSize="-1"
+	maxSessionSize="-1"
+	allowOversizedSessions="false"
 	masterConnectionPoolSize="100"
 	slaveConnectionPoolSize="100"
 	database="0"

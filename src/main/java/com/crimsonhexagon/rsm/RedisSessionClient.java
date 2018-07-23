@@ -59,6 +59,13 @@ public interface RedisSessionClient {
 	 */
 	boolean exists(String key);
 	
+    /**
+     * Get the encoded size of the given object
+     * @param obj
+     * @return
+     */
+    int getEncodedSize(Object obj);
+	
 	/**
 	 * Perform any tasks necessary when shutting down
 	 */
