@@ -13,21 +13,21 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.crimsonhexagon.rsm.redisson;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import com.crimsonhexagon.rsm.RedisSession;
+import com.crimsonhexagon.rsm.RedisSessionClient;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import com.crimsonhexagon.rsm.RedisSession;
-import com.crimsonhexagon.rsm.RedisSessionClient;
-
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redisson-backed {@link RedisSessionClient}
@@ -35,60 +35,60 @@ import io.netty.buffer.ByteBuf;
  * @author Steve Ungerer
  */
 public class RedissonSessionClient implements RedisSessionClient {
-	protected final Log log = LogFactory.getLog(getClass());
-	
-	private final RedissonClient redissonClient;
-	
-	public RedissonSessionClient(Config config) {
-		this.redissonClient = Redisson.create(config);
-	}
-	
-	@Override
-	public void save(String key, RedisSession session) {
-		redissonClient.getBucket(key).set(session);
-		if (log.isTraceEnabled()) {
-		    try {
-		        int size = getEncodedSize(session);
-		        log.trace(session.getId() + " size: " + size);
-		    } catch (Exception e) {
-		        log.error("Failed to record session size", e);
-		    }
-		}
-	}
+    protected final Log log = LogFactory.getLog(getClass());
 
-	@Override
-	public RedisSession load(String key) {
-		Object obj = redissonClient.getBucket(key).get();
-		if (obj != null) {
-			if (RedisSession.class.isAssignableFrom(obj.getClass())) {
-				return RedisSession.class.cast(obj);
-			} else {
-				log.warn("Incompatible session class found in redis for session [" + key + "]: " + obj.getClass());
-				delete(key);
-			}
-		}
-		return null;
-	}
+    private final RedissonClient redissonClient;
 
-	@Override
-	public void delete(String key) {
-		redissonClient.getBucket(key).delete();
-	}
+    public RedissonSessionClient(Config config) {
+        this.redissonClient = Redisson.create(config);
+    }
 
-	@Override
-	public void expire(String key, long expirationTime, TimeUnit timeUnit) {
-		redissonClient.getBucket(key).expire(expirationTime, timeUnit);
-	}
+    @Override
+    public void save(String key, RedisSession session) {
+        redissonClient.getBucket(key).set(session);
+        if (log.isTraceEnabled()) {
+            try {
+                int size = getEncodedSize(session);
+                log.trace(session.getId() + " size: " + size);
+            } catch (Exception e) {
+                log.error("Failed to record session size", e);
+            }
+        }
+    }
 
-	@Override
-	public boolean exists(String key) {
-		return redissonClient.getBucket(key).isExists();
-	}
+    @Override
+    public RedisSession load(String key) {
+        Object obj = redissonClient.getBucket(key).get();
+        if (obj != null) {
+            if (RedisSession.class.isAssignableFrom(obj.getClass())) {
+                return RedisSession.class.cast(obj);
+            } else {
+                log.warn("Incompatible session class found in redis for session [" + key + "]: " + obj.getClass());
+                delete(key);
+            }
+        }
+        return null;
+    }
 
-	@Override
+    @Override
+    public void delete(String key) {
+        redissonClient.getBucket(key).delete();
+    }
+
+    @Override
+    public void expire(String key, long expirationTime, TimeUnit timeUnit) {
+        redissonClient.getBucket(key).expire(expirationTime, timeUnit);
+    }
+
+    @Override
+    public boolean exists(String key) {
+        return redissonClient.getBucket(key).isExists();
+    }
+
+    @Override
     public int getEncodedSize(Object obj) {
-	    ByteBuf buf = null;
-	    try {
+        ByteBuf buf = null;
+        try {
             buf = redissonClient.getConfig().getCodec().getValueEncoder().encode(obj);
             return buf.readableBytes();
         } catch (IOException e) {
@@ -101,7 +101,7 @@ public class RedissonSessionClient implements RedisSessionClient {
     }
 
     @Override
-	public void shutdown() {
-		redissonClient.shutdown();
-	}
+    public void shutdown() {
+        redissonClient.shutdown();
+    }
 }

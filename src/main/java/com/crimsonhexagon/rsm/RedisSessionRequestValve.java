@@ -13,13 +13,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 package com.crimsonhexagon.rsm;
-
-import java.io.IOException;
-import java.util.regex.Pattern;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.Valve;
@@ -29,6 +24,12 @@ import org.apache.catalina.valves.ValveBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 
+import java.io.IOException;
+import java.util.regex.Pattern;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletResponse;
+
 
 /**
  * {@link Valve} to ensure session is persisted to redis after the request has completed
@@ -36,83 +37,84 @@ import org.apache.juli.logging.LogFactory;
  * @author Steve Ungerer
  */
 public class RedisSessionRequestValve extends ValveBase {
-	private static final Log log = LogFactory.getLog(RedisSessionRequestValve.class);
-	private final RedisSessionManager manager;
-	private final Pattern ignorePattern;
+    private static final Log log = LogFactory.getLog(RedisSessionRequestValve.class);
+    private final RedisSessionManager manager;
+    private final Pattern ignorePattern;
 
-	/**
-	 * Default pattern for request URIs to ignore:
-	 * Ignore ico|png|gif|jpg|jpeg|swf|css|js that appear in the requestURI (query strings not presented for matching)
-	 */
-	public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
-	
-	private static final String POST_METHOD = "post";
-	// note key to store the query string
-	protected static final String REQUEST_QUERY = "com.crimsonhexagon.rsm.QUERY_STRING";
+    /**
+     * Default pattern for request URIs to ignore:
+     * Ignore ico|png|gif|jpg|jpeg|swf|css|js that appear in the requestURI (query strings not presented for matching)
+     */
+    public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
 
-	public RedisSessionRequestValve(RedisSessionManager manager, String ignorePattern) {
-		this.manager = manager;
-		if (ignorePattern != null && ignorePattern.trim().length() > 0) {
-			this.ignorePattern = Pattern.compile(ignorePattern, Pattern.CASE_INSENSITIVE);
-		} else {
-			this.ignorePattern = null;
-		}
-	}
+    private static final String POST_METHOD = "post";
+    // note key to store the query string
+    protected static final String REQUEST_QUERY = "com.crimsonhexagon.rsm.QUERY_STRING";
 
-	@Override
-	public void invoke(Request request, Response response) throws IOException, ServletException {
+    public RedisSessionRequestValve(RedisSessionManager manager, String ignorePattern) {
+        this.manager = manager;
+        if (ignorePattern != null && ignorePattern.trim().length() > 0) {
+            this.ignorePattern = Pattern.compile(ignorePattern, Pattern.CASE_INSENSITIVE);
+        } else {
+            this.ignorePattern = null;
+        }
+    }
+
+    @Override
+    public void invoke(Request request, Response response) throws IOException, ServletException {
         Context context = request.getContext();
         if (context == null) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, sm.getString("standardHost.noContext"));
             return;
         }
         Thread.currentThread().setContextClassLoader(context.getLoader().getClassLoader());
-	    
+
         boolean processed = false;
-		try {
-			if (ignorePattern == null || !ignorePattern.matcher(request.getRequestURI()).matches()) {
-			    processed = true;
-				if (log.isTraceEnabled()) {
-				    log.trace("Will save to redis after request for [" + getQueryString(request) + "]");
-				}
-			} else {
-				if (log.isTraceEnabled()) {
-					log.trace("Ignoring [" + getQueryString(request) + "]");
-				}
-			}
-			getNext().invoke(request, response);
-		} finally {
-			manager.afterRequest(processed);
-		}
-	}
+        try {
+            if (ignorePattern == null || !ignorePattern.matcher(request.getRequestURI()).matches()) {
+                processed = true;
+                if (log.isTraceEnabled()) {
+                    log.trace("Will save to redis after request for [" + getQueryString(request) + "]");
+                }
+            } else {
+                if (log.isTraceEnabled()) {
+                    log.trace("Ignoring [" + getQueryString(request) + "]");
+                }
+            }
+            getNext().invoke(request, response);
+        } finally {
+            manager.afterRequest(processed);
+        }
+    }
 
-	@Override
-	public boolean isAsyncSupported() {
-		return true;
-	}
+    @Override
+    public boolean isAsyncSupported() {
+        return true;
+    }
 
-	/**
-	 * Get the full query string of the request; used only for logging
-	 * @param request
-	 * @return
-	 */
-	private String getQueryString(final Request request) {
-		final StringBuilder sb = new StringBuilder();
-		sb.append(request.getMethod()).append(' ').append(request.getRequestURI());
-		if (!isPostMethod(request) && request.getQueryString() != null) {
-			sb.append('?').append(request.getQueryString());
-		}
-		final String result = sb.toString();
-		request.setNote(REQUEST_QUERY, result);
-		return result;
-	}
+    /**
+     * Get the full query string of the request; used only for logging
+     * 
+     * @param request
+     * @return
+     */
+    private String getQueryString(final Request request) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(request.getMethod()).append(' ').append(request.getRequestURI());
+        if (!isPostMethod(request) && request.getQueryString() != null) {
+            sb.append('?').append(request.getQueryString());
+        }
+        final String result = sb.toString();
+        request.setNote(REQUEST_QUERY, result);
+        return result;
+    }
 
-	protected boolean isPostMethod(final Request request) {
-		return POST_METHOD.equalsIgnoreCase(request.getMethod());
-	}
-	
-	RedisSessionManager getManager() {
-	    return manager;
-	}
+    protected boolean isPostMethod(final Request request) {
+        return POST_METHOD.equalsIgnoreCase(request.getMethod());
+    }
+
+    RedisSessionManager getManager() {
+        return manager;
+    }
 
 }
