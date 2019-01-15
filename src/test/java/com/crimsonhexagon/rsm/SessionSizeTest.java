@@ -1,3 +1,19 @@
+/*-
+ *  Copyright 2015 Crimson Hexagon
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package com.crimsonhexagon.rsm;
 
 import static org.mockito.Mockito.mock;
@@ -15,7 +31,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 
 public class SessionSizeTest {
-    
+
     @Test
     public void testValidAttrSize() throws Exception {
         RedisSession rs = session(RedisSessionManager.DO_NOT_CHECK, RedisSessionManager.DO_NOT_CHECK, new MockRedisSessionClient());
@@ -32,12 +48,12 @@ public class SessionSizeTest {
         // == to max, should be stored
         rs.setAttribute("foo", s);
         Assert.assertTrue("attribute not stored", s.equals(rs.getAttribute("foo")));
-        
+
         s = RandomString.make(length + 1);
         rs.setAttribute("bar", s);
         Assert.assertNull("attribute > max length stored", rs.getAttribute("bar"));
     }
-    
+
     @Test
     public void testLargeSessionSize() throws Exception {
         String s = RandomString.make(128);
@@ -51,7 +67,7 @@ public class SessionSizeTest {
         rs.getManager().save(rs, true);
         verify(c, never()).save(Mockito.anyString(), Mockito.any());
     }
-    
+
     private RedisSession session(int maxAttrSize, int maxSessionSize, RedisSessionClient client) throws IOException {
         RedisSession rs = new RedisSession();
         RedisSessionManager mgr = spy(RedisSessionManager.class);
@@ -63,5 +79,5 @@ public class SessionSizeTest {
         rs.setValid(true);
         return rs;
     }
-    
+
 }

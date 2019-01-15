@@ -1,3 +1,19 @@
+/*-
+ *  Copyright 2015 Crimson Hexagon
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package com.crimsonhexagon.rsm.redisson;
 
 import org.redisson.config.Config;
@@ -12,87 +28,87 @@ import org.redisson.connection.balancer.RoundRobinLoadBalancer;
  * @author Steve Ungerer
  */
 public class ElasticacheSessionManager extends BaseRedissonSessionManager {
-	public static final String DEFAULT_LOAD_BALANCER_CLASS = RoundRobinLoadBalancer.class.getName();
-	public static final int DEFAULT_MASTER_CONN_POOL_SIZE = 100;
-	public static final int DEFAULT_SLAVE_CONN_POOL_SIZE = 100;
-	public static final int DEFAULT_NODE_POLL_INTERVAL = 1_000;
-	
-	private String nodes;
-	private String loadBalancerClass = DEFAULT_LOAD_BALANCER_CLASS;
-	private int masterConnectionPoolSize = DEFAULT_MASTER_CONN_POOL_SIZE;
-	private int slaveConnectionPoolSize = DEFAULT_SLAVE_CONN_POOL_SIZE;
-	private int nodePollInterval = DEFAULT_NODE_POLL_INTERVAL;
-	
-	@Override
-	protected Config configure(Config config) {
-		if (nodes == null || nodes.trim().length() == 0) {
-			throw new IllegalStateException("Manager must specify node string. e.g., nodes=\"node1.com:6379 node2.com:6379\"");
-		}
-		LoadBalancer lb = null;
-		if (loadBalancerClass != null && loadBalancerClass.trim().length() != 0) {
-			try {
-				lb = LoadBalancer.class.cast(Class.forName(loadBalancerClass).newInstance());
-			} catch (Exception e) {
-				log.error("Failed to instantiate LoadBalancer", e);
-			}
-		}
-		
-		ReplicatedServersConfig ecCfg = config.useReplicatedServers();
-		ecCfg
-			.addNodeAddress(nodes.trim().split("\\s+"))
-			.setDatabase(database)
-			.setMasterConnectionPoolSize(masterConnectionPoolSize)
-			.setSlaveConnectionPoolSize(slaveConnectionPoolSize)
-			.setPassword(password)
-			.setTimeout(timeout)
-			.setReadMode(ReadMode.MASTER_SLAVE)
-			.setPingTimeout(pingTimeout)
-			.setRetryAttempts(retryAttempts)
-			.setRetryInterval(retryInterval)
-			.setScanInterval(nodePollInterval);
-		if (lb != null) {
-			ecCfg.setLoadBalancer(lb);
-		}
-		return config;
-	}
+    public static final String DEFAULT_LOAD_BALANCER_CLASS = RoundRobinLoadBalancer.class.getName();
+    public static final int DEFAULT_MASTER_CONN_POOL_SIZE = 100;
+    public static final int DEFAULT_SLAVE_CONN_POOL_SIZE = 100;
+    public static final int DEFAULT_NODE_POLL_INTERVAL = 1_000;
 
-	public String getNodes() {
-		return nodes;
-	}
+    private String nodes;
+    private String loadBalancerClass = DEFAULT_LOAD_BALANCER_CLASS;
+    private int masterConnectionPoolSize = DEFAULT_MASTER_CONN_POOL_SIZE;
+    private int slaveConnectionPoolSize = DEFAULT_SLAVE_CONN_POOL_SIZE;
+    private int nodePollInterval = DEFAULT_NODE_POLL_INTERVAL;
 
-	public void setNodes(String nodes) {
-		this.nodes = nodes;
-	}
+    @Override
+    protected Config configure(Config config) {
+        if (nodes == null || nodes.trim().length() == 0) {
+            throw new IllegalStateException("Manager must specify node string. e.g., nodes=\"node1.com:6379 node2.com:6379\"");
+        }
+        LoadBalancer lb = null;
+        if (loadBalancerClass != null && loadBalancerClass.trim().length() != 0) {
+            try {
+                lb = LoadBalancer.class.cast(Class.forName(loadBalancerClass).newInstance());
+            } catch (Exception e) {
+                log.error("Failed to instantiate LoadBalancer", e);
+            }
+        }
 
-	public String getLoadBalancerClass() {
-		return loadBalancerClass;
-	}
+        ReplicatedServersConfig ecCfg = config.useReplicatedServers();
+        ecCfg
+            .addNodeAddress(nodes.trim().split("\\s+"))
+            .setDatabase(database)
+            .setMasterConnectionPoolSize(masterConnectionPoolSize)
+            .setSlaveConnectionPoolSize(slaveConnectionPoolSize)
+            .setPassword(password)
+            .setTimeout(timeout)
+            .setReadMode(ReadMode.MASTER_SLAVE)
+            .setPingTimeout(pingTimeout)
+            .setRetryAttempts(retryAttempts)
+            .setRetryInterval(retryInterval)
+            .setScanInterval(nodePollInterval);
+        if (lb != null) {
+            ecCfg.setLoadBalancer(lb);
+        }
+        return config;
+    }
 
-	public void setLoadBalancerClass(String loadBalancerClass) {
-		this.loadBalancerClass = loadBalancerClass;
-	}
+    public String getNodes() {
+        return nodes;
+    }
 
-	public int getMasterConnectionPoolSize() {
-		return masterConnectionPoolSize;
-	}
+    public void setNodes(String nodes) {
+        this.nodes = nodes;
+    }
 
-	public void setMasterConnectionPoolSize(int masterConnectionPoolSize) {
-		this.masterConnectionPoolSize = masterConnectionPoolSize;
-	}
+    public String getLoadBalancerClass() {
+        return loadBalancerClass;
+    }
 
-	public int getSlaveConnectionPoolSize() {
-		return slaveConnectionPoolSize;
-	}
+    public void setLoadBalancerClass(String loadBalancerClass) {
+        this.loadBalancerClass = loadBalancerClass;
+    }
 
-	public void setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
-		this.slaveConnectionPoolSize = slaveConnectionPoolSize;
-	}
+    public int getMasterConnectionPoolSize() {
+        return masterConnectionPoolSize;
+    }
 
-	public int getNodePollInterval() {
-		return nodePollInterval;
-	}
+    public void setMasterConnectionPoolSize(int masterConnectionPoolSize) {
+        this.masterConnectionPoolSize = masterConnectionPoolSize;
+    }
 
-	public void setNodePollInterval(int nodePollInterval) {
-		this.nodePollInterval = nodePollInterval;
-	}
+    public int getSlaveConnectionPoolSize() {
+        return slaveConnectionPoolSize;
+    }
+
+    public void setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
+        this.slaveConnectionPoolSize = slaveConnectionPoolSize;
+    }
+
+    public int getNodePollInterval() {
+        return nodePollInterval;
+    }
+
+    public void setNodePollInterval(int nodePollInterval) {
+        this.nodePollInterval = nodePollInterval;
+    }
 }
