@@ -27,6 +27,8 @@ import org.redisson.config.Config;
 import com.crimsonhexagon.rsm.RedisSession;
 import com.crimsonhexagon.rsm.RedisSessionClient;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * Redisson-backed {@link RedisSessionClient}
  *
@@ -85,10 +87,16 @@ public class RedissonSessionClient implements RedisSessionClient {
 
 	@Override
     public int getEncodedSize(Object obj) {
+	    ByteBuf buf = null;
 	    try {
-            return redissonClient.getConfig().getCodec().getValueEncoder().encode(obj).readableBytes();
+            buf = redissonClient.getConfig().getCodec().getValueEncoder().encode(obj);
+            return buf.readableBytes();
         } catch (IOException e) {
             throw new IllegalArgumentException(e); // redisson style
+        } finally {
+            if (buf != null) {
+                buf.release();
+            }
         }
     }
 
