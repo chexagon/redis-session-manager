@@ -47,8 +47,6 @@ public class RedisSessionRequestValve extends ValveBase {
 	public static final String DEFAULT_IGNORE_PATTERN = ".*\\.(ico|png|gif|jpg|jpeg|swf|css|js)$";
 	
 	private static final String POST_METHOD = "post";
-	// note key to indicate we're going to process this request after completion
-	protected static final String REQUEST_PROCESSED = "com.crimsonhexagon.rsm.PROCESSED";
 	// note key to store the query string
 	protected static final String REQUEST_QUERY = "com.crimsonhexagon.rsm.QUERY_STRING";
 
@@ -70,23 +68,21 @@ public class RedisSessionRequestValve extends ValveBase {
         }
         Thread.currentThread().setContextClassLoader(context.getLoader().getClassLoader());
 	    
+        boolean processed = false;
 		try {
 			if (ignorePattern == null || !ignorePattern.matcher(request.getRequestURI()).matches()) {
-				request.setNote(REQUEST_PROCESSED, Boolean.TRUE);
+			    processed = true;
 				if (log.isTraceEnabled()) {
-					log.trace("Will save to redis after request for [" + getQueryString(request) + "]");
+				    log.trace("Will save to redis after request for [" + getQueryString(request) + "]");
 				}
 			} else {
-				request.removeNote(REQUEST_PROCESSED);
 				if (log.isTraceEnabled()) {
 					log.trace("Ignoring [" + getQueryString(request) + "]");
 				}
 			}
 			getNext().invoke(request, response);
 		} finally {
-			if (Boolean.TRUE.equals(request.getNote(REQUEST_PROCESSED))) {
-				manager.afterRequest();
-			}
+			manager.afterRequest(processed);
 		}
 	}
 
@@ -113,6 +109,10 @@ public class RedisSessionRequestValve extends ValveBase {
 
 	protected boolean isPostMethod(final Request request) {
 		return POST_METHOD.equalsIgnoreCase(request.getMethod());
+	}
+	
+	RedisSessionManager getManager() {
+	    return manager;
 	}
 
 }

@@ -334,9 +334,12 @@ public abstract class RedisSessionManager extends ManagerBase {
 	/**
 	 * Handle post-request actions. Invoked from {@link RedisSessionRequestValve}
 	 */
-	public void afterRequest() {
+	public void afterRequest(boolean requestProcessed) {
 		try {
 			RedisSession session = currentSessionState.get().session;
+			if (log.isTraceEnabled()) {
+			    log.trace("afterRequest for " + (session == null ? "null" : session.getId()) + "; processed: " + requestProcessed );
+			}
 			if (session != null) {
 				if (session.isValid()) {
 					log.trace("Request with session completed, saving session " + session.getId());
