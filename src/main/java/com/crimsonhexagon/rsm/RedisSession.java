@@ -33,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <em>will not</em> be marked dirty. Setting {@link RedisSessionManager#setForceSaveAfterRequest(boolean)} to <code>true</code> will alleviate this but can
  * cause unnecessary persists. The preferred workaround for this (other than preventing mutation of session attributes) is to enable
  * {@link RedisSessionManager#isDirtyOnMutation()} and invoke <code>setAttribute()</code> with the existing key and new value. Alternatively 
- * one could use <code>session.removeAttribute(null);</code> but this is a bit of a hack.
+ * one could use <code>session.removeAttribute(null);</code> but this is a bit of a hack.<br>
+ * Setting the {@link #SAVE_IMMEDIATELY_ATTR} to any value will force the immediate save of the session.
  *
  * @author Steve Ungerer
  */
@@ -41,6 +42,11 @@ public class RedisSession extends StandardSession {
 	private static final Log log = LogFactory.getLog(RedisSession.class);
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Magical attribute: if set (to any value) the session will be persisted immediately
+	 */
+	public static final String SAVE_IMMEDIATELY_ATTR = "_rsmSaveImmediately_";
+	
 	private transient boolean dirty;
 
 	/**
@@ -87,6 +93,11 @@ public class RedisSession extends StandardSession {
 	 */
 	@Override
 	public void setAttribute(String key, Object value) {
+	    if (SAVE_IMMEDIATELY_ATTR.equals(key)) {
+	        log.debug("Saving session " + getId() + " immediately");
+	        saveOnChange(true);
+	        return;
+	    }
 		RedisSessionManager rsm = getManager();
 		if (rsm.getMaxSessionAttributeSize() != RedisSessionManager.DO_NOT_CHECK) {
 		    int size = rsm.getEncodedSize(value);
@@ -143,11 +154,21 @@ public class RedisSession extends StandardSession {
 
 	/**
 	 * Persist the session to redis if so configured.
-	 * @return was the session saved to redis
+	 * Never forces a save.
+	 * @return
 	 */
 	private boolean saveOnChange() {
+	    return saveOnChange(false);
+	}
+	
+	/**
+	 * Persist the session to redis if so configured.
+	 * @param force force the save
+	 * @return was the session saved to redis
+	 */
+	private boolean saveOnChange(boolean force) {
 	    RedisSessionManager rsm = getManager();
-		if (rsm.isSaveOnChange()) {
+		if (force || rsm.isSaveOnChange()) {
 			rsm.save(this, true);
 			return true;
 		}
