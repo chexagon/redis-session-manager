@@ -48,12 +48,12 @@
 		<dependency>
 			<groupId>org.redisson</groupId>
 			<artifactId>redisson</artifactId>
-			<version>3.7.5</version>
+			<version>3.10.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport-native-epoll</artifactId>
-			<version>4.1.27.Final</version>
+			<version>4.1.32.Final</version>
 			<classifier>linux-x86_64</classifier>
 		</dependency>
 		<dependency>
