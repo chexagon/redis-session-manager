@@ -22,41 +22,41 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import net.bytebuddy.utility.RandomString;
 import org.apache.catalina.Context;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class SessionSizeTest {
 
     @Test
     public void testValidAttrSize() throws Exception {
         RedisSession rs = session(RedisSessionManager.DO_NOT_CHECK, RedisSessionManager.DO_NOT_CHECK, new MockRedisSessionClient());
-        String s = RandomString.make(128);
+        String s = randomString(128);
         rs.setAttribute("foo", s);
         Assert.assertTrue("attribute not stored", s.equals(rs.getAttribute("foo")));
     }
 
     @Test
     public void testLargeAttrSize() throws Exception {
-        String s = RandomString.make(128);
+        String s = randomString(128);
         final int length = new MockRedisSessionClient().getEncodedSize(s);
         RedisSession rs = session(length, RedisSessionManager.DO_NOT_CHECK, new MockRedisSessionClient());
         // == to max, should be stored
         rs.setAttribute("foo", s);
         Assert.assertTrue("attribute not stored", s.equals(rs.getAttribute("foo")));
 
-        s = RandomString.make(length + 1);
+        s = randomString(length + 1);
         rs.setAttribute("bar", s);
         Assert.assertNull("attribute > max length stored", rs.getAttribute("bar"));
     }
 
     @Test
     public void testLargeSessionSize() throws Exception {
-        String s = RandomString.make(128);
+        String s = randomString(128);
         RedisSessionClient c = mock(RedisSessionClient.class);
         when(c.getEncodedSize(Mockito.any())).thenReturn(Integer.MAX_VALUE);
         RedisSession rs = session(RedisSessionManager.DO_NOT_CHECK, 1, new MockRedisSessionClient());
@@ -80,4 +80,16 @@ public class SessionSizeTest {
         return rs;
     }
 
+    private static final String ALPHANUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    private static final int BOUNDS = ALPHANUM.length();
+    
+    protected static String randomString(int size) {
+        Random r = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            sb.append(ALPHANUM.charAt(r.nextInt(BOUNDS)));
+        }
+        return sb.toString();
+    }
+    
 }

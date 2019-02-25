@@ -1,0 +1,32 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>rsm-lettuce</artifactId>
+    <packaging>jar</packaging>
+    <name>Lettuce client for Redis Session Manager</name>
+    <description>A tomcat8 session manager providing session replication via persistence to redis with Lettuce</description>
+
+    <parent>
+        <groupId>com.crimsonhexagon</groupId>
+        <artifactId>rsm-parent</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.crimsonhexagon</groupId>
+            <artifactId>rsm-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>5.1.4.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat</groupId>
+            <artifactId>tomcat-catalina</artifactId>
+            <version>8.0.39</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>
