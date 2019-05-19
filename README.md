@@ -1,5 +1,5 @@
-# Redis Session Manager for Tomcat 8
-Tomcat 8 / Java 8 session manager to store sessions in Redis.
+# Redis Session Manager for Tomcat 8.5
+Tomcat 8.5 / Java 8 session manager to store sessions in Redis.
 
 ## Goals
 * Support for Lettuce and Redisson redis clients
@@ -11,6 +11,7 @@ Tomcat 8 / Java 8 session manager to store sessions in Redis.
 ## Usage
 * Decide if you're going to use either Lettuce or Redisson as the redis client.
 * After building, copy `rsm-[redisson|lettuce]-with-dependencies-VERSION.jar` to tomcat/lib
+* Note `master` pom defines Tomcat 8.5.x; use branch `tomcat8` for Tomcat 8.0.x
 
 ## Common Configuration
 ```
