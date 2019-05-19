@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.crimsonhexagon</groupId>
     <artifactId>rsm-parent</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Redis Session Manager for Tomcat 8</name>
     <description>A tomcat 8.5.x session manager providing session replication via persistence to redis</description>
