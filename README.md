@@ -48,6 +48,9 @@ Usage
 * _maxSessionSize_: if not -1 (RedisSessionManager#DO_NOT_CHECK) specifies a maximum _encoded_ size for the entire session. Sessions larger than this size will be logged and will not be persisted to redis.
 * _allowOversizedSessions_: if _true_ will allow sessions exceeding the configurations in _maxSessionAttributeSize_ and _maxSessionSize_ to be saved. An error will still be logged for any sessions exceeding the size. This attribute has no effect if neither _maxSessionAttributeSize_ nor _maxSessionSize_ are specified.
 
+
+A session can be persisted immediately to redis in the web application by setting the RedisSession#SAVE_IMMEDIATELY_ATTR) attribute to any value.
+
 AWS ElastiCache usage
 -----
 Version 2.0.0 added additional support for ElastiCache Replication Groups. Applicable configuration:
