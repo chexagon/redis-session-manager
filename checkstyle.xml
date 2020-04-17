@@ -39,17 +39,19 @@
         <property name="fileNamePattern" value="rebel\.xml" />
     </module>
 
+    <module name="LineLength">
+		<property name="max" value="200" />
+		<property name="ignorePattern"
+			value="^package.*|^import.*|a href|href|http://|https://|ftp://" />
+		<property name="severity" value="warning" />
+    </module>
+
     <module name="TreeWalker">
         <module name="OuterTypeFilename"/>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
             <property name="format" value="\\u00(09|0(a|A)|0(c|C)|0(d|D)|22|27|5(C|c))|\\(0(10|11|12|14|15|42|47)|134)"/>
             <property name="message" value="Consider using special escape sequence instead of octal value or Unicode escaped value."/>
-            <property name="severity" value="warning"/>
-        </module>
-        <module name="LineLength">
-            <property name="max" value="200"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
             <property name="severity" value="warning"/>
         </module>
         <module name="AvoidStarImport"/>
@@ -209,6 +211,11 @@
             <property name="sortImportsInGroupAlphabetically" value="true"/>
             <property name="separateLineBetweenGroups" value="true"/>
         </module>
+        <!-- allow an optional blank line between java and javax (eclipse does it, intellij does not -->
+        <module name="SuppressionXpathSingleFilter">
+          <property name="checks" value="CustomImportOrder"/>
+          <property name="message" value="^Extra separation in import group before 'javax.*"/>
+        </module>    
         <module name="MethodParamPad"/>
         <module name="ParenPad"/>
         <!-- PLUS, MINUS, LOR, and LAND have been excluded. Developer choice; mix and match-->
