@@ -85,7 +85,7 @@ public class LettuceSessionClient implements RedisSessionClient {
 
     @Override
     public void expire(String key, long expirationTime, TimeUnit timeUnit) {
-        async( c -> c.pexpire(key, TimeUnit.MILLISECONDS.convert(expirationTime, timeUnit)));
+        async(c -> c.pexpire(key, TimeUnit.MILLISECONDS.convert(expirationTime, timeUnit)));
     }
 
     @Override
