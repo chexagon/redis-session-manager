@@ -31,7 +31,7 @@
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-catalina</artifactId>
-            <version>8.5.40</version>
+            <version>8.5.86</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
