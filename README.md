@@ -1,4 +1,12 @@
-# Redis Session Manager for Tomcat 8.5
+# This repository has been archived as of 19 May 2026
+It's been many years since the last maintenance, and the current dependency tree has many CVEs. 
+If you fork, be sure to address the security issues in various dependencies!
+
+
+-----------------------------------
+
+
+## Redis Session Manager for Tomcat 8.5
 Tomcat 8.5 / Java 8 session manager to store sessions in Redis.
 
 ## Goals
